@@ -91,7 +91,7 @@ return function(Vargs, env)
 						plr.Character.Humanoid.Jump = true
 					end
 					wait()
-					plr.Character.HumanoidRootPart.CFrame = (plr.Character.HumanoidRootPart.CFrame*CFrame.Angles(0, math.rad(90), 0)*CFrame.new(5+.2, 0, 0))*CFrame.Angles(0, math.rad(90), 0)
+					plr.Character:PivotTo(plr.Character:GetPivot() * CFrame.new(0, 0, -5))
 				end
 			end
 		};
@@ -133,14 +133,10 @@ return function(Vargs, env)
 			Filter = true;
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
-				assert(args[1], "Missing player name")
 				assert(args[2], "Missing message")
 
-				for _, v in service.GetPlayers(plr, args[1]) do
-					Remote.MakeGui(v, "Notification", {
-						Title = "Notification";
-						Message = service.Filter(args[2], plr, v);
-					})
+				for _, v in service.GetPlayers(plr, assert(args[1], "Missing player name")) do
+					Functions.Notification("Notification", service.Filter(args[2], plr, v), {v})
 				end
 			end
 		};
@@ -244,10 +240,7 @@ return function(Vargs, env)
 			Description = "Make a message and makes it stay for the amount of time (in seconds) you supply";
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
-				assert(tonumber(args[1]), "Invalid time amount (must be number)")
-				assert(args[2], "Missing message")
-
-				Functions.Message(`Message from {service.FormatPlayer(plr)}`, service.BroadcastFilter(args[2], plr), service.GetPlayers(), true, args[1])
+				Functions.Message(`Message from {service.FormatPlayer(plr)}`, service.BroadcastFilter(assert(args[2], "Missing message"), plr), service.GetPlayers(), true, assert(tonumber(args[1]), "Invalid time amount (must be number)"))
 			end
 		};
 
@@ -259,9 +252,7 @@ return function(Vargs, env)
 			Description = "Makes a message";
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
-				assert(args[1], "Missing message")
-
-				Functions.Message(`Message from {service.FormatPlayer(plr)}`, service.BroadcastFilter(args[1], plr), service.GetPlayers(), true)
+				Functions.Message(`Message from {service.FormatPlayer(plr)}`, service.BroadcastFilter(assert(args[1], "Missing message"), plr), service.GetPlayers(), true)
 			end
 		};
 
@@ -291,9 +282,7 @@ return function(Vargs, env)
 			Description = "Makes a small message";
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
-				assert(args[1], "Missing message")
-
-				Functions.Notify(`Message from {service.FormatPlayer(plr)}`, service.BroadcastFilter(args[1], plr), service.GetPlayers())
+				Functions.Notify(`Message from {service.FormatPlayer(plr)}`, service.BroadcastFilter(assert(args[1], "Missing message"), plr), service.GetPlayers())
 			end
 		};
 
@@ -305,10 +294,7 @@ return function(Vargs, env)
 			Description = `Same as {Settings.Prefix}n but says whatever you want the title to be instead of your name.`;
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
-				assert(args[1], "Missing title")
-				assert(args[2], "Missing message")	
-
-				Functions.Notify(service.BroadcastFilter(args[1], plr), service.BroadcastFilter(args[2], plr), service.GetPlayers())
+				Functions.Notify(service.BroadcastFilter(assert(args[1], "Missing title"), plr), service.BroadcastFilter(assert(args[2], "Missing message")	, plr), service.GetPlayers())
 			end
 		};
 
@@ -324,10 +310,7 @@ return function(Vargs, env)
 				assert(args[2], "Missing message")
 				for _, v in service.GetPlayers(plr, args[1]) do
 					Remote.RemoveGui(v, "Notify")
-					Remote.MakeGui(v, "Notify", {
-						Title = `Message from {service.FormatPlayer(plr)}`;
-						Message = service.Filter(args[2], plr, v);
-					})
+					Functions.Notify(`Message from {service.FormatPlayer(plr)}`, service.Filter(args[2], plr, v), {v})
 				end
 			end
 		};
@@ -340,9 +323,7 @@ return function(Vargs, env)
 			Description = "Makes a hint";
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
-				assert(args[1], "Missing message")
-
-				Functions.Hint(service.BroadcastFilter(args[1], plr), service.GetPlayers(), nil, service.FormatPlayer(plr), `rbxthumb://type=AvatarHeadShot&id={plr.UserId}&w=48&h=48`)
+				Functions.Hint(service.BroadcastFilter(assert(args[1], "Missing message"), plr), service.GetPlayers(), nil, service.FormatPlayer(plr), `rbxthumb://type=AvatarHeadShot&id={plr.UserId}&w=48&h=48`)
 			end
 		};
 
@@ -354,10 +335,7 @@ return function(Vargs, env)
 			Description = "Makes a hint and make it stay on the screen for the specified amount of time";
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
-				assert(tonumber(args[1]), "Invalid time amount (must be a number)")
-				assert(args[2], "Missing message")
-
-				Functions.Hint(service.BroadcastFilter(args[1], plr), service.GetPlayers(), tonumber(args[2]), service.FormatPlayer(plr), `rbxthumb://type=AvatarHeadShot&id={plr.UserId}&w=48&h=48`)
+				Functions.Hint(service.BroadcastFilter(assert(args[2], "Missing message"), plr), service.GetPlayers(), assert(tonumber(args[1]), "Invalid time amount (must be a number)"), service.FormatPlayer(plr), `rbxthumb://type=AvatarHeadShot&id={plr.UserId}&w=48&h=48`)
 			end
 		};
 
@@ -394,18 +372,8 @@ return function(Vargs, env)
 						end
 
 						Remote.RemoveGui(v, "Notify")
-						Remote.MakeGui(v, "Notify", {
-							Title = `Warning from {service.FormatPlayer(plr)}`;
-							Message = reason;
-						})
-
-						Remote.MakeGui(plr, "Notification", {
-							Title = "Notification";
-							Icon = server.MatIcons.Shield;
-							Message = `Warned {service.FormatPlayer(v)}`;
-							Time = 5;
-							OnClick = Core.Bytecode(`client.Remote.Send('ProcessCommand','{Settings.Prefix}warnings {v.Name}')`)
-						})
+						Functions.Notify(`Warning from {service.FormatPlayer(plr)}`, reason, {v})
+						Functions.Notification("Notification", `Warned {service.FormatPlayer(v)}`, {plr}, 5, "MatIcons://Shield", Core.Bytecode(`client.Remote.Send('ProcessCommand','{Settings.Prefix}warnings {v.Name}')`))
 					end
 				end
 			end
@@ -443,13 +411,7 @@ return function(Vargs, env)
 							Core.CrossServer("RemovePlayer", v.Name, `Warning from {service.FormatPlayer(plr)}`, reason)
 						end
 
-						Remote.MakeGui(plr, "Notification", {
-							Title = "Notification";
-							Icon = server.MatIcons.Shield;
-							Message = `Kick-warned {service.FormatPlayer(v)}`;
-							Time = 5;
-							OnClick = Core.Bytecode(`client.Remote.Send('ProcessCommand','{Settings.Prefix}warnings {v.Name}')`)
-						})
+						Functions.Notification("Notification", `Kick-warned {service.FormatPlayer(v)}`, {plr}, 5, "MatIcons://Shield", Core.Bytecode(`client.Remote.Send('ProcessCommand','{Settings.Prefix}warnings {v.Name}')`))
 					end
 				end
 			end
@@ -502,13 +464,7 @@ return function(Vargs, env)
 							task.defer(Core.SavePlayerData, v, playerData)
 						end
 
-						Remote.MakeGui(plr, "Notification", {
-							Title = "Notification";
-							Icon = server.MatIcons.Shield;
-							Message = string.format("Removed %d warning%s from %s.", count, count == 1 and "" or "s", service.FormatPlayer(v));
-							Time = 5;
-							OnClick = Core.Bytecode(`client.Remote.Send('ProcessCommand','{Settings.Prefix}warnings {v.Name}')`)
-						})
+						Functions.Notification("Notification", string.format("Removed %d warning%s from %s.", count, count == 1 and "" or "s", service.FormatPlayer(v)), {plr}, 5, "MatIcons://Shield", Core.Bytecode(`client.Remote.Send('ProcessCommand','{Settings.Prefix}warnings {v.Name}')`))
 					end
 				end
 			end
@@ -530,13 +486,7 @@ return function(Vargs, env)
 						task.defer(Core.SavePlayerData, v, playerData)
 					end
 
-					Remote.MakeGui(plr, "Notification", {
-						Title = "Notification";
-						Icon = server.MatIcons.Shield;
-						Message = `Cleared warning(s) for {service.FormatPlayer(v)}`;
-						Time = 5;
-						OnClick = Core.Bytecode(`client.Remote.Send('ProcessCommand','{Settings.Prefix}warnings {v.Name}')`)
-					})
+					Functions.Notification("Notification", `Cleared warning(s) for {service.FormatPlayer(v)}`, {plr}, 5, "MatIcons://Shield", Core.Bytecode(`client.Remote.Send('ProcessCommand','{Settings.Prefix}warnings {v.Name}')`))
 				end
 			end
 		};
@@ -957,7 +907,7 @@ return function(Vargs, env)
 			Function = function(plr: Player, args: {string})
 				assert(args[1], "Missing player name")
 
-				local sessionName = Functions.GetRandom() --// Used by the private chat windows
+				local sessionName = service.HttpService:GenerateGUID(false) --// Used by the private chat windows
 				local newSession = Remote.NewSession("PrivateChat")
 				local history = {}
 
@@ -1130,7 +1080,7 @@ return function(Vargs, env)
 				assert(args[1], "Missing player name")
 				assert(args[2], "Missing message")
 				for _, v in service.GetPlayers(plr, args[1]) do
-					local replyTicket = Functions.GetRandom()
+					local replyTicket = service.HttpService:GenerateGUID(false)
 					Variables.PMtickets[replyTicket] = plr
 
 					Remote.MakeGui(v, "PrivateMessage", {
@@ -1260,10 +1210,7 @@ return function(Vargs, env)
 			Function = function(plr: Player, args: {string})
 				local trello = HTTP.Trello.API
 				if not Settings.Trello_Enabled or trello == nil then
-					Remote.MakeGui(plr, "Notification", {
-						Title = "Trello Synced Ban List";
-						Message = "Trello has not been enabled.";
-					})
+					Functions.Notification("Trello Synced Ban List", "Trello has not been enabled.", {plr})
 				else
 					Remote.MakeGui(plr, "List", {
 						Title = "Trello Synced Bans List";
@@ -1390,7 +1337,7 @@ return function(Vargs, env)
 					"―――――――――――――――――――――――",
 				}
 				for _, v in players do
-					cPcall(function()
+					task.spawn(pcall, function()
 						if type(v) == "string" and v == "NoPlayer" then
 							table.insert(tab, {
 								Text = "PLAYERLESS CLIENT";
@@ -2132,9 +2079,101 @@ return function(Vargs, env)
 					end
 				end
 
+					for i, v in players do
+					Routine(function()
+						local response = Remote.GetGui(v, "Vote", {
+							Question = question;
+							Answers = anstab;
+							IsRandomOrder = true;
+						})
+						if response then
+							table.insert(responses, response)
+						end
+					end)
+				end
+
+				Remote.MakeGui(plr, "List", {
+					Title = "Results";
+					Tab = voteUpdate();
+					Update = "TempUpdate";
+					UpdateArgs = {{UpdateKey = voteKey}};
+					AutoUpdate = 1;
+				})
+
+				delay(120, function() Logs.TempUpdaters[voteKey] = nil end)
+			end
+		};
+
+		OrderedVote = {
+			Prefix = Settings.Prefix;
+			Commands = {"orderedvote","ovote"};
+			Args = {"player", "answer1,answer2,etc (NO SPACES)", "question"};
+			Filter = true;
+			Description = `Same as {Settings.Prefix}vote, but with more options, such as randomizing the order of the choices.`;
+			AdminLevel = "Moderators";
+			Function = function(plr: Player, args: {string})
+				local question = args[3]
+				if not question then error("You forgot to supply a question!") end
+				local answers = args[2]
+				local anstab = {}
+				local responses = {}
+				local voteKey = `ADONISVOTE{math.random()}`;
+				local players = service.GetPlayers(plr, args[1])
+				local startTime = os.clock();
+
+				local function voteUpdate()
+					local total = #responses
+					local results = table.create(total)
+
+					local tab = {
+						`Question: {question}`;
+						`Total Responses: {total}`;
+						`Didn't Vote: {#players-total}`;
+						`Time Left: {math.ceil(math.max(0, 120 - (os.clock()-startTime)))}`;
+					}
+
+					for _, v in responses do
+						if not results[v] then results[v] = 0 end
+						results[v] += 1
+					end
+
+					for _, v in anstab do
+						local ans = v
+						local num = results[v]
+						local percent
+						if not num then
+							num = 0
+							percent = 0
+						else
+							percent = math.floor((num/total)*100)
+						end
+
+						table.insert(tab, {
+							Text=`{ans} | {percent}% - {num}/{total}`,
+							Desc=`Number: {num}/{total} | Percent: {percent}`
+						})
+					end
+
+					return tab;
+				end
+
+				Logs.TempUpdaters[voteKey] = voteUpdate;
+
+				if not answers then
+					anstab = {"Yes", "No"}
+				else
+					for ans in string.gmatch(answers, "([^,]+)") do
+						table.insert(anstab, ans)
+					end
+				end
+
 				for i, v in players do
 					Routine(function()
-						local response = Remote.GetGui(v, "Vote", {Question = question; Answers = anstab;})
+						local response = Remote.GetGui(v, "Vote", {
+							Question = question;
+							Answers = anstab;
+							IsRandomOrder = false;
+						})
 						if response then
 							table.insert(responses, response)
 						end
@@ -2401,7 +2440,7 @@ return function(Vargs, env)
 				end
 			end
 		};
-		
+
 		ResetAtmosphere = {
 			Prefix = Settings.Prefix;
 			Commands = {"resetatmosphere", "fixatmosphere"};
@@ -2409,16 +2448,30 @@ return function(Vargs, env)
 			Description = "Resets atmosphere back to the setting it had on server start";
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
-				if service.Lighting:FindFirstChildWhichIsA("Atmosphere") ~= nil then
-					for i, v in service.Lighting:FindFirstChildWhichIsA("Atmosphere") do
-						v.Name = Variables.OriginalAtmosphereSettings.Name
-						v.Density = Variables.OriginalAtmosphereSettings.Density
-						v.Offset = Variables.OriginalAtmosphereSettings.Offset
-						v.Color = Variables.OriginalAtmosphereSettings.Color
-						v.Decay = Variables.OriginalAtmosphereSettings.Decay
-						v.Glare = Variables.OriginalAtmosphereSettings.Glare
-						v.Haze = Variables.OriginalAtmosphereSettings.Haze
+				if service.Lighting:FindFirstChildWhichIsA("Atmosphere") then
+					Variables.OriginalAtmosphereSettings = {
+						Name = service.Lighting:FindFirstChildWhichIsA("Atmosphere").Name,
+						Density = service.Lighting:FindFirstChildWhichIsA("Atmosphere").Density,
+						Offset = service.Lighting:FindFirstChildWhichIsA("Atmosphere").Offset,
+						Color = service.Lighting:FindFirstChildWhichIsA("Atmosphere").Color,
+						Decay = service.Lighting:FindFirstChildWhichIsA("Atmosphere").Decay,
+						Glare = service.Lighting:FindFirstChildWhichIsA("Atmosphere").Glare,
+						Haze = service.Lighting:FindFirstChildWhichIsA("Atmosphere").Haze,
+					}
+
+					if service.Lighting:FindFirstChildWhichIsA("Atmosphere") ~= nil then
+						local Atmosphere = service.Lighting:FindFirstChildWhichIsA("Atmosphere")
+						
+						Atmosphere.Name = Variables.OriginalAtmosphereSettings.Name
+						Atmosphere.Density = Variables.OriginalAtmosphereSettings.Density
+						Atmosphere.Offset = Variables.OriginalAtmosphereSettings.Offset
+						Atmosphere.Color = Variables.OriginalAtmosphereSettings.Color
+						Atmosphere.Decay = Variables.OriginalAtmosphereSettings.Decay
+						Atmosphere.Glare = Variables.OriginalAtmosphereSettings.Glare
+						Atmosphere.Haze = Variables.OriginalAtmosphereSettings.Haze
 					end
+				else
+					Functions.Hint("Atmosphere doesn't exist!", {plr})
 				end
 			end
 		};
@@ -2446,7 +2499,7 @@ return function(Vargs, env)
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
 				for _, v in service.GetPlayers(plr, string.lower(args[1])) do
-					cPcall(function()
+					task.spawn(pcall, function()
 						if v and v:FindFirstChild("leaderstats") then
 							for a, q in v.leaderstats:GetChildren() do
 								if q:IsA("IntValue") or q:IsA("NumberValue") then q.Value = 0 end
@@ -2718,7 +2771,7 @@ return function(Vargs, env)
 							while wait() and Variables.Jails[ind] == jail and mod.Parent == workspace do
 								if Variables.Jails[ind] == jail and v.Parent == service.Players then
 									if opt == "rainbow" then
-										box.Color3 = Color3.fromHSV(tick()%5/5, 1, 1)
+										box.Color3 = Color3.fromHSV(os.clock()%5/5, 1, 1)
 									end
 
 									if v.Character then
@@ -3002,54 +3055,67 @@ return function(Vargs, env)
 			end
 		};
 
-		Clone = {
+		LoadAvatar = {
 			Prefix = Settings.Prefix;
-			Commands = {"clone", "cloneplayer", "duplicate"};
-			Args = {"player", "copies (max: 50 | default: 1)"};
-			Description = "Clones the character of the target player(s)";
+			Commands = {"loadavatar", "loadchar", "loadcharacter", "clone", "cloneplayer", "duplicate"};
+			Args = {"player", "copies (max: 50 | default: 1)", "appearence (optional)", "avatar type(R6/R15) (optional)"};
+			Description = "Copies the target character in front of you with the specified amount of copies.";
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
-				local num = tonumber(args[2] or 1)
-				assert(num <= 50, "Cannot make more than 50 clones")
+				local count = tonumber(args[2] or 1)
+				assert(count <= 50, "Cannot make more than 50 clones")
+				local isSelf = args[3] and string.lower(args[3]) == "me"
+				local avatarType = args[4] and assert(Enum.HumanoidRigType[string.upper(args[4])], "Invalid avatar type given")
+				local appearenceId = not isSelf and args[3] and (tonumber(string.match(args[3], "^userid%-(%d*)")) or assert(Functions.GetUserIdFromNameAsync(args[3]), "Unable to fetch user."))
+				local description = appearenceId and assert(select(2, xpcall(service.Players.GetHumanoidDescriptionFromUserId, warn, service.Players, appearenceId)), "Unable to get avatar for target appearence.")
 
 				for _, v in service.GetPlayers(plr, args[1]) do
-					local char = v.Character
-					local hum = char and char:FindFirstChildOfClass("Humanoid")
-					if not hum then
+					local character = v.Character
+					local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+					local localDescription = humanoid and humanoid:GetAppliedDescription()
+					if not humanoid then
 						continue
 					end
-					Routine(function()
-						char.Archivable = true
-						local charPivot = char:GetPivot()
-						for _ = 1, num do
-							local clone = char:Clone()
+
+					local oldArchivable, charPivot = character.Archivable, character:GetPivot()
+					character.Archivable = true
+
+					for i = 1, count do
+						task.spawn(function()
+							local clone = avatarType and service.Players:CreateHumanoidModelFromDescription(description or localDescription, avatarType, Enum.AssetTypeVerification.Always) or character:Clone()
 							table.insert(Variables.Objects, clone)
 
-							local animate
-							local anim = clone:FindFirstChild("Animate")
-							if anim then
-								animate = hum.RigType == Enum.HumanoidRigType.R15 and Deps.Assets.R15Animate:Clone() or Deps.Assets.R6Animate:Clone()
+							local oldAnimate, animate = clone:FindFirstChild("Animate"), nil
+							if oldAnimate and oldAnimate:IsA("LocalScript") then
+								animate = humanoid.RigType == Enum.HumanoidRigType.R15 and Deps.Assets.R15Animate:Clone() or Deps.Assets.R6Animate:Clone()
 								animate:ClearAllChildren()
-								for _, v in anim:GetChildren() do
+								for _, v in oldAnimate:GetChildren() do
 									v.Parent = animate
 								end
-								anim:Destroy()
+								oldAnimate:Destroy()
 								animate.Parent = clone
 							end
 
-							clone:PivotTo(charPivot)
+							clone:PivotTo(charPivot * CFrame.Angles(0, math.rad((360/count)*i+90), 0) * CFrame.new((count*0.2)+5, 0, 0) * CFrame.Angles(0, math.pi / 2, 0))
 
 							if animate then
 								animate.Disabled = false
 							end
+
 							clone:FindFirstChildOfClass("Humanoid").Died:Once(function()
 								service.Debris:AddItem(clone, service.Players.RespawnTime)
 							end)
 
-							clone.Archivable = false
+							clone.Archivable = oldArchivable
 							clone.Parent = workspace
-						end
-					end)
+							if appearenceId and not avatarType then
+								clone.Name = Functions.GetNameFromUserIdAsync(appearenceId)
+								clone:FindFirstChildOfClass("Humanoid"):ApplyDescription(description, Enum.AssetTypeVerification.Always)
+							end
+						end)
+					end
+
+					character.Archivable = oldArchivable
 				end
 			end
 		};
@@ -3791,8 +3857,7 @@ return function(Vargs, env)
 					color = BrickColor.random().Color
 					Functions.Hint("A color wasn't supplied. A random color will be used instead.", {plr})
 				else
-					color = Functions.ParseColor3(args[2])
-					assert(color, "Invalid color provided")
+					color = assert(Functions.ParseColor3(args[2]), "Invalid color provided")
 				end
 
 				for _, v: Player in service.GetPlayers(plr, args[1]) do
@@ -3897,9 +3962,7 @@ return function(Vargs, env)
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
 				assert(args[1], "Argument 1 missing")
-
-				local color = Functions.ParseColor3(args[1])
-				assert(color, "Invalid color provided")
+				local color = assert(Functions.ParseColor3(args[1]), "Invalid color provided")
 
 				if args[2] then
 					for _, v in service.GetPlayers(plr, args[2]) do
@@ -3919,9 +3982,7 @@ return function(Vargs, env)
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
 				assert(args[1], "Argument 1 missing")
-
-				local color = Functions.ParseColor3(args[1])
-				assert(color, "Invalid color provided")
+				local color = assert(Functions.ParseColor3(args[1]), "Invalid color provided")
 
 				if args[2] then
 					for _, v in service.GetPlayers(plr, args[2]) do
@@ -4020,11 +4081,10 @@ return function(Vargs, env)
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
 				assert(args[1], "Argument 1 missing")
-				local color = Functions.ParseColor3(args[1])
-				assert(color, "Invalid color provided")
-				
+				local color = assert(Functions.ParseColor3(args[1]), "Invalid color provided")
+
 				if service.Lighting:FindFirstChildWhichIsA("Atmosphere") then
-							Remote.SetAtmosphere(color)
+					Remote.SetAtmosphere(color)
 				end
 				if args[2] then
 					for _, v in service.GetPlayers(plr, args[2]) do
@@ -4372,11 +4432,7 @@ return function(Vargs, env)
 					if hum then
 						hum.WalkSpeed = speed
 						if Settings.CommandFeedback then
-							Remote.MakeGui(v, "Notification", {
-								Title = "Notification";
-								Message = `Character walk speed has been set to {speed}`;
-								Time = 15;
-							})
+							Functions.Notification("Notification", `Character walk speed has been set to {speed}`, {v}, 15)
 						end
 					end
 				end
@@ -4602,15 +4658,7 @@ return function(Vargs, env)
 			Hidden = true;
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
-				for _, v in service.GetPlayers(plr, args[1]) do
-					Remote.MakeGui(v, "Notification", {
-						Title = "Teleport";
-						Icon = server.MatIcons["QR code scanner"];
-						Text = "Click to teleport to GRP";
-						Time = 30;
-						OnClick = Core.Bytecode("service.TeleportService:Teleport(5118029260)");
-					})
-				end
+				Functions.Notification("Teleport", "Click to teleport to GRP", service.GetPlayers(plr, args[1]), 30, "MatIcon://QR code scanner", Core.Bytecode("service.TeleportService:Teleport(5118029260)"))
 			end
 		};
 
@@ -4790,7 +4838,11 @@ return function(Vargs, env)
 			Description = "Teleports the target player(s) to your position";
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
-				local players = service.GetPlayers(plr, assert(args[1], "Missing target player (argument #1)"))
+				local players = service.GetPlayers(plr, if args[1] then args[1] else "me")
+				if #players == 1 and players[1] == plr then
+					Commands.Thru.Function(plr, {`@{plr.Name}`})
+					return
+				end
 				if #players < 10 or not Commands.MassBring or Remote.GetGui(plr, "YesNoPrompt", {
 					Title = "Suggestion";
 					Icon = server.MatIcons.Feedback;
@@ -4924,7 +4976,76 @@ return function(Vargs, env)
 				end
 			end
 		};
+		
+		RemoveLeaderstat = {
+			Prefix = Settings.Prefix;
+			Commands = {"removestats", "delstat"};
+			Args = {"name"};
+			Description = "Removes a leaderstat entirely";
+			AdminLevel = "Moderators";
+			Function = function(plr: Player, args: {string})
+				local statName = assert(args[1], "Missing the stat name!")
 
+				for _, v in service.GetPlayers(plr) do
+					local leaderstats = v:FindFirstChild("leaderstats")
+					if leaderstats then
+						leaderstats.Name = "leaderstats"
+						local absoluteMatch = leaderstats:FindFirstChild(statName)
+						if absoluteMatch and (absoluteMatch:IsA("IntValue") or absoluteMatch:IsA("NumberValue")) then
+							absoluteMatch:Destroy()
+						else
+							for _, st in leaderstats:GetChildren() do
+								if (st:IsA("IntValue") or st:IsA("NumberValue")) and string.match(st.Name:lower(), `^{statName:lower()}`) then
+									st:Destroy()
+								end
+							end
+						end
+						if #leaderstats:GetChildren() == 0 then
+							leaderstats:Destroy()
+						end
+					else
+						Functions.Hint(`{service.FormatPlayer(v)} doesn't have a leaderstats folder`, {plr})
+					end
+				end
+			end
+		};
+		
+		NewStat = {
+			Prefix = Settings.Prefix;
+			Commands = {"newstat", "createstat", "cstat"};
+			Args = {"statname", "type (string/number [default: number])"};
+			Description = "Creates a new stat on the leaderboard";
+			AdminLevel = "Moderators";
+			Function = function(plr: Player, args: {string})
+				local statName = args[1]
+				if not statName then
+					error("Not statname provided!")
+				end
+				local statType = if args[2] then args[2]:lower() else "number"
+				local FilteredStatName = service.BroadcastFilter(statName, plr)
+				
+				if FilteredStatName ~= statName then
+					error("Stat name is filtered! Sorry!")
+				end
+				
+				for _,p in service.GetPlayers() do 
+					local leaderstats = p:FindFirstChild("leaderstats") or service.New("Folder")
+					leaderstats.Name = "leaderstats"
+					if statName then 
+						if not leaderstats:FindFirstChild(FilteredStatName) then 
+							local newStat = service.New(if statType == "number" then "NumberValue" else "StringValue") 
+							newStat.Name = FilteredStatName
+							if statType ~= "number" then 
+								newStat.Value = "N/A"
+							end
+							newStat.Parent = leaderstats
+						end
+					end
+					leaderstats.Parent = p
+				end
+			end
+		};
+		
 		AddToStat = {
 			Prefix = Settings.Prefix;
 			Commands = {"add", "addtostat", "addstat"};
@@ -4937,6 +5058,7 @@ return function(Vargs, env)
 				for _, v in service.GetPlayers(plr, args[1]) do
 					local leaderstats = v:FindFirstChild("leaderstats")
 					if leaderstats then
+						leaderstats.Name = "leaderstats"
 						local absoluteMatch = leaderstats:FindFirstChild(statName)
 						if absoluteMatch and (absoluteMatch:IsA("IntValue") or absoluteMatch:IsA("NumberValue")) then
 							absoluteMatch.Value += valueToAdd
@@ -5261,10 +5383,81 @@ return function(Vargs, env)
 			end
 		};
 
+		SaveOutfit = {
+			Prefix = Settings.Prefix;
+			Commands = {"saveoutfit", "savefit"};
+			Args = {"player"};
+			Description = "Saves your current character's appearance when respawning";
+			AdminLevel = "Moderators";
+			Function = function(plr: Player, args: {[number]:string})
+				for _, v in service.GetPlayers(plr, args[1]) do
+					local connection = service.OutfitCache[v]
+					if connection then
+						connection:Disconnect()
+					end
+
+					if v.Character then
+						local humanoid: Humanoid? = v.Character and v.Character:FindFirstChildOfClass("Humanoid")
+						if humanoid then
+							local humanoidDesc: HumanoidDescription = humanoid:GetAppliedDescription():Clone()
+							local customAccessories = {}
+							for i,x in v.Character:GetChildren() do
+								if x.Name == "CustomAdonisAccessory" then
+									table.insert(customAccessories, x:GetAttribute("AssetId"))
+								end
+							end
+
+							service.OutfitCache[v] = v.CharacterAdded:Connect(function(char)
+								char:SetAttribute("LoadingSavedOutfit", true)
+								local newHum = char:WaitForChild("Humanoid")
+								newHum:WaitForChild("HumanoidDescription")
+								task.defer(newHum.ApplyDescription, newHum, humanoidDesc, Enum.AssetTypeVerification.Always)
+								for i,x in customAccessories do
+									service.SecureAccessory(v, x)
+								end
+								char:SetAttribute("LoadingSavedOutfit", nil)
+							end)
+						end
+					end
+				end
+			end,
+		},
+
+		RemoveSavedOutfit = {
+			Prefix = Settings.Prefix;
+			Commands = {"removesavedoutfit", "removeoutfit", "removefit", "defaultavatar"};
+			Args = {"player"};
+			Description = "Removes any currently saved outfits and reverts your character to its original look";
+			AdminLevel = "Moderators";
+			Function = function(plr: Player, args: {[number]:string})
+				for _, v in service.GetPlayers(plr, args[1]) do
+					local connection = service.OutfitCache[v]
+					if connection then
+						connection:Disconnect()
+					end
+
+					if v.Character then
+						local humanoid: Humanoid? = v.Character and v.Character:FindFirstChildOfClass("Humanoid")
+						if humanoid then
+							local humdesc = service.Players:GetHumanoidDescriptionFromUserId(v.UserId)
+							humanoid:ApplyDescription(humdesc)
+						end
+
+						for i,x in v.Character:GetChildren() do
+							if x.Name == "CustomAdonisAccessory" then
+								x:Destroy()
+							end
+						end
+					end
+				end
+			end,
+		},
+		
 		AvatarItem = {
 			Prefix = Settings.Prefix;
 			Commands = {"avataritem", "giveavtaritem", "catalogitem", "accessory", "hat", "tshirt", "givetshirt", "shirt", "giveshirt", "pants", "givepants", "face", "anim",
-				"torso", "larm", "leftarm", "rarm", "rightarm", "lleg", "leftleg", "rleg", "rightleg", "head"}; -- Legacy aliases from old commands
+				"torso", "larm", "leftarm", "rarm", "rightarm", "lleg", "leftleg", "rleg", "rightleg", "head", "walkanimation", "walkanim", "runanimation", "runanim", "jumpanimation",
+				"jumpanim", "fallanimation", "fallanim"}; -- Legacy aliases from old commands
 			Args = {"player", "ID"};
 			Description = "Give the target player(s) the avatar/catalog item matching <ID> and adds it to their HumanoidDescription.";
 			AdminLevel = "Moderators";
@@ -5274,73 +5467,66 @@ return function(Vargs, env)
 				local success, productInfo = pcall(service.MarketplaceService.GetProductInfo, service.MarketplaceService, itemId)
 				assert(success and productInfo, "Invalid item ID")
 
-				local typeId = productInfo.AssetTypeId
+				local AssetTypeNameDescriptionOverides = {
+					DynamicHead = "Head"
+				}
 
-				--// Roblox doesn't expose a good way to insert into a HumanoidDescription from the Enum.AssetType, so we're mapping them out instead.
-				local SingleAssetIds = {
-					[2] = "GraphicTShirt",
-					[11] = "Shirt",
-					[12] = "Pants",
-					[17] = "Head",
-					[18] = "Face",
-					[27] = "Torso",
-					[28] = "RightArm",
-					[29] = "LeftArm",
-					[30] = "LeftLeg",
-					[31] = "RightLeg",
-					[48] = "ClimbAnimation",
-					[49] = "DeathAnimation",
-					[50] = "FallAnimation",
-					[51] = "IdleAnimation",
-					[52] = "JumpAnimation",
-					[53] = "RunAnimation",
-					[54] = "SwimAnimation",
-					[55] = "WalkAnimation",
-				}
-				local AccessoryAssetIds = { -- AssetTypes that are comma-seperated (accessories)
-					[8] = "HatAccessory",
-					[41] = "HairAccessory",
-					[42] = "FaceAccessory",
-					[43] = "NeckAccessory",
-					[44] = "ShouldersAccessory",
-					[45] = "FrontAccessory",
-					[46] = "BackAccessory",
-					[47] = "WaistAccessory",
-				}
-				local LayeredAccessoryAssetIds = {
-					[64] = Enum.AccessoryType.TShirt,
-					[65] = Enum.AccessoryType.Shirt,
-					[66] = Enum.AccessoryType.Pants,
-					[67] = Enum.AccessoryType.Jacket,
-					[68] = Enum.AccessoryType.Sweater,
-					[69] = Enum.AccessoryType.Shorts,
-					[70] = Enum.AccessoryType.LeftShoe,
-					[71] = Enum.AccessoryType.RightShoe,
-					[72] = Enum.AccessoryType.DressSkirt,
-				}
+				local typeId = productInfo.AssetTypeId
+				local typeEnum
+
+				for _, enum in pairs(Enum.AvatarAssetType:GetEnumItems()) do
+					if enum.Value == typeId then
+						typeEnum = enum
+						break
+					end
+				end
 
 				for _, v: Player in service.GetPlayers(plr, args[1]) do
 					local humanoid: Humanoid? = v.Character and v.Character:FindFirstChildOfClass("Humanoid")
 					if humanoid then
 						local humanoidDesc: HumanoidDescription = humanoid:GetAppliedDescription()
+						
+						if not typeEnum then
+							if v.Character:GetAttribute("LoadingSavedOutfit") then continue end
 
-						if SingleAssetIds[typeId] then
-							humanoidDesc[SingleAssetIds[typeId]] = itemId
-						elseif AccessoryAssetIds[typeId] then
-							if string.find(humanoidDesc[AccessoryAssetIds[typeId]], tostring(itemId)) then continue end
-							humanoidDesc[AccessoryAssetIds[typeId]] ..= `,{itemId}`
-						elseif LayeredAccessoryAssetIds[typeId] then
-							local accessories = humanoidDesc:GetAccessories(true)
-							table.insert(accessories, {
-								Order = #accessories,
-								AssetId = itemId,
-								AccessoryType = LayeredAccessoryAssetIds[typeId]
-							})
-							humanoidDesc:SetAccessories(accessories, true)
-						elseif typeId == 61 then
+							local customHats = 0
+							for _,x in v.Character:GetChildren() do
+								if x.Name == "CustomAdonisAccessory" then
+									customHats += 1
+								end
+							end
+
+							if customHats > 7 then
+								continue
+							end
+
+							service.SecureAccessory(v, itemId)
+							continue
+						end
+
+						if typeEnum == Enum.AvatarAssetType.EmoteAnimation then
 							humanoidDesc:AddEmote(productInfo.Name, itemId)
 						else
-							error("Item not supported")
+							local accessoryType = service.AvatarEditorService:GetAccessoryType(typeEnum)
+							if accessoryType and accessoryType ~= Enum.AccessoryType.Unknown then
+								local accessories = humanoidDesc:GetAccessories(true)
+								table.insert(accessories, {
+									Order = #accessories,
+									AssetId = itemId,
+									AccessoryType = accessoryType
+								})
+								humanoidDesc:SetAccessories(accessories, true)
+							elseif accessoryType == Enum.AccessoryType.Unknown then
+								local typeName = typeEnum.Name
+								if AssetTypeNameDescriptionOverides[typeName] then
+									typeName = AssetTypeNameDescriptionOverides[typeName]
+								end
+								if humanoidDesc[typeName] then
+									humanoidDesc[typeName] = itemId
+								else
+									error(`Asset type of {productInfo.Name} ({itemId}) not supported`)
+								end
+							end
 						end
 
 						task.defer(humanoid.ApplyDescription, humanoid, humanoidDesc, Enum.AssetTypeVerification.Always)
@@ -5348,7 +5534,7 @@ return function(Vargs, env)
 				end
 			end
 		};
-
+		
 		RemoveTShirt = {
 			Prefix = Settings.Prefix;
 			Commands = {"removetshirt", "untshirt", "notshirt"};
@@ -5618,8 +5804,8 @@ return function(Vargs, env)
 			Description = "Change the volume of the currently playing song";
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
-				local volume = tonumber(args[1])
-				assert(volume, "Volume must be a valid number")
+				local volume = assert(tonumber(args[1]), "Volume must be a valid number")
+
 				for i, v in service.SoundService:GetChildren() do
 					if v.Name=="ADONIS_SOUND" then
 						if string.sub(args[1], 1, 1) == "+" then
@@ -5887,13 +6073,10 @@ return function(Vargs, env)
 
 						new.Parent = part
 						new.Disabled = false
-						Remote.MakeGui(v, "Notification", {
-							Title = "Flight";
-							Message = "You are now flying. Press E to toggle flight.";
-							Time = 10;
-						})
 					end
 				end
+
+				Functions.Hint("You are now flying - press E to toggle flight", service.GetPlayers(plr, args[1]), 10)
 			end
 		};
 
@@ -5915,11 +6098,7 @@ return function(Vargs, env)
 							if sVal then
 								sVal.Value = speed
 								if Settings.CommandFeedback then
-									Remote.MakeGui(v, "Notification", {
-										Title = "Notification";
-										Message = `Character fly speed has been set to {speed}`;
-										Time = 15;
-									})
+									Functions.Notification("Notification", `Character fly speed has been set to {speed}`, {v}, 15)
 								end
 							end
 						end
@@ -5967,7 +6146,7 @@ return function(Vargs, env)
 							repeat xran = math.random(-9999, 9999) until math.abs(xran) >= 5555
 							repeat zran = math.random(-9999, 9999) until math.abs(zran) >= 5555
 							v.Character.Humanoid.Sit = true
-							v.Character.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+							v.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 							local Attachment = service.New("Attachment", v.Character.HumanoidRootPart)
 							local frc = service.New("VectorForce", v.Character.HumanoidRootPart)
 							frc.Name = "BFRC"
@@ -6039,18 +6218,10 @@ return function(Vargs, env)
 					if human then
 						if string.lower(args[2]) == "hide" then
 							human.DisplayName = ""
-							Remote.MakeGui(v, "Notification", {
-								Title = "Notification";
-								Message = "Your character name has been hidden";
-								Time = 10;
-							})
+							Functions.Notification("Notification", "Your character name has been hidden", {v}, 10)
 						else
 							human.DisplayName = args[2]
-							Remote.MakeGui(v, "Notification", {
-								Title = "Notification";
-								Message = `Your character name is now "{args[2]}"`;
-								Time = 10;
-							})
+							Functions.Notification("Notification", `Your character name is now "{args[2]}"`, {v}, 10)
 						end
 					end
 				end
@@ -6069,11 +6240,7 @@ return function(Vargs, env)
 					local human = char and char:FindFirstChildOfClass("Humanoid");
 					if human then
 						human.DisplayName = v.DisplayName
-						Remote.MakeGui(v, "Notification", {
-							Title = "Notification";
-							Message = "Your character name has been restored";
-							Time = 10;
-						})
+						Functions.Notification("Notification", "Your character name has been restored", {v}, 10)
 					end
 				end
 			end
@@ -6115,44 +6282,7 @@ return function(Vargs, env)
 				end
 			end
 		};
-
-		RemovePackage = {
-			Prefix = Settings.Prefix;
-			Commands = {"removepackage", "nopackage", "rpackage"};
-			Args = {"player"};
-			Description = "Removes the target player(s)'s Package";
-			AdminLevel = "Moderators";
-			Function = function(plr: Player, args: {string})
-				for _, v in service.GetPlayers(plr, args[1]) do
-					if v.Character then
-						local humanoid = v.Character:FindFirstChildOfClass("Humanoid")
-						if humanoid then
-							local rigType = humanoid.RigType
-							if rigType == Enum.HumanoidRigType.R6 then
-								for _, x in v.Character:GetChildren() do
-									if x:IsA("CharacterMesh") then
-										x:Destroy()
-									end
-								end
-							elseif rigType == Enum.HumanoidRigType.R15 then
-								local rig = Deps.Assets.RigR15
-								local rigHumanoid = rig.Humanoid
-								local validParts = table.create(#Enum.BodyPartR15:GetEnumItems())
-								for _, x in Enum.BodyPartR15:GetEnumItems() do
-									validParts[x.Name] = x.Value
-								end
-								for _, x in rig:GetChildren() do
-									if x:IsA("BasePart") and validParts[x.Name] then
-										humanoid:ReplaceBodyPartR15(validParts[x.Name], x:Clone())
-									end
-								end
-							end
-						end
-					end
-				end
-			end
-		};
-
+		
 		GivePackage = {
 			Prefix = Settings.Prefix;
 			Commands = {"package", "givepackage", "setpackage", "bundle"};
@@ -6164,55 +6294,41 @@ return function(Vargs, env)
 				assert(args[1] and args[2] and tonumber(args[2]), "Missing or invalid package ID")
 
 				local id = tonumber(args[2])
-				local assetHD = Variables.BundleCache[id]
 
-				if assetHD == false then
-					Remote.MakeGui(plr, "Output", {Title = "Output"; Message = `Package {id} is not supported.`})
+				local suc,ers = pcall(function() return service.AssetService:GetBundleDetailsAsync(id) end)
+
+				if suc then
+					for _, item in ers.Items do
+						if item.Type == "Asset" then
+							Commands.AvatarItem.Function(plr, {`@{plr.Name}`, item.Id})
+							break
+						end
+					end
+				else
+					Remote.MakeGui(plr, "Output", {Title = "Output"; Message = `Package {id} doesn't exist.`})
 					return
 				end
+			end
+		};
 
-				if not assetHD then
-					local suc,ers = pcall(function() return service.AssetService:GetBundleDetailsAsync(id) end)
+		Outfit = {
+			Prefix = Settings.Prefix;
+			Commands = {"outfit"};
+			Args = {"player", "outfitid"};
+			Description = "Changes the target player(s)'s character appearence to a specified OutfitID. You can get OutfitID(s) by using Roblox Avatar API.";
+			AdminLevel = "Moderators";
+			Function = function(plr: Player, args: {string})
+				assert(args[1], "Missing player name")
+				local success, desc = pcall(service.Players.GetHumanoidDescriptionFromOutfitId, service.Players, assert(tonumber(args[2]), "Missing OutfitId"))
 
-					if suc then
-						for _, item in ers.Items do
-							if item.Type == "UserOutfit" then
-								local _, Outfit = pcall(function() return service.Players:GetHumanoidDescriptionFromOutfitId(item.Id) end)
-								Variables.BundleCache[id] = Outfit
-								assetHD = Outfit
-								break
-							end
+				if success then
+					for _, v in service.GetPlayers(plr, args[1]) do
+						if v.Character and v.Character:FindFirstChildOfClass("Humanoid") then
+							v.Character.Humanoid:ApplyDescription(desc, Enum.AssetTypeVerification.Always)
 						end
 					end
-
-					if not suc or not assetHD then
-						Variables.BundleCache[id] = false
-
-						Remote.MakeGui(plr, "Output", {Title = "Output"; Message = `Package {id} is not supported.`})
-						return
-					end
-				end
-
-				for _, v in service.GetPlayers(plr, args[1]) do
-					local char = v.Character
-
-					if char then
-						local humanoid = char:FindFirstChildOfClass("Humanoid")
-
-						if not humanoid then
-							Functions.Hint(`Could not transfer bundle to {v.Name}`, {plr})
-						else
-							local newDescription = humanoid:GetAppliedDescription()
-							local defaultDescription = Instance.new("HumanoidDescription")
-							for _, property in {"BackAccessory", "BodyTypeScale", "ClimbAnimation", "DepthScale", "Face", "FaceAccessory", "FallAnimation", "FrontAccessory", "GraphicTShirt", "HairAccessory", "HatAccessory", "Head", "HeadColor", "HeadScale", "HeightScale", "IdleAnimation", "JumpAnimation", "LeftArm", "LeftArmColor", "LeftLeg", "LeftLegColor", "NeckAccessory", "Pants", "ProportionScale", "RightArm", "RightArmColor", "RightLeg", "RightLegColor", "RunAnimation", "Shirt", "ShouldersAccessory", "SwimAnimation", "Torso", "TorsoColor", "WaistAccessory", "WalkAnimation", "WidthScale"} do
-								if assetHD[property] ~= defaultDescription[property] then
-									newDescription[property] = assetHD[property]
-								end
-							end
-
-							humanoid:ApplyDescription(newDescription, Enum.AssetTypeVerification.Always)
-						end
-					end
+				else
+					error("Unable to get avatar for target user")
 				end
 			end
 		};
@@ -6221,19 +6337,20 @@ return function(Vargs, env)
 			Prefix = Settings.Prefix;
 			Commands = {"char", "character", "appearance"};
 			Args = {"player", "username"};
-			Description = "Changes the target player(s)'s character appearence to <ID/Name>. If you want to supply a UserId, supply with 'userid-', followed by a number after 'userid'.";
+			Description = "Changes the target player(s)'s character appearence to <ID/Name>.";
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
 				assert(args[1], "Missing player name")
-				assert(args[2], "Missing username or UserId")
-
-				local target = tonumber(string.match(args[2], "^userid%-(%d*)")) or assert(Functions.GetUserIdFromNameAsync(args[2]), "Unable to fetch user.")
+				local target = service.GetPlayers(plr, assert(args[2], "Missing username or UserId"), {
+					AllowUnknownUsers = true;
+				}) 
 				if target then
-					local success, desc = pcall(service.Players.GetHumanoidDescriptionFromUserId, service.Players, target)
+					target = target[1]
+					local success, desc = pcall(service.Players.GetHumanoidDescriptionFromUserId, service.Players, target.UserId)
 
 					if success then
 						for _, v in service.GetPlayers(plr, args[1]) do
-							v.CharacterAppearanceId = target
+							v.CharacterAppearanceId = target.UserId
 
 							if v.Character and v.Character:FindFirstChildOfClass("Humanoid") then
 								v.Character.Humanoid:ApplyDescription(desc, Enum.AssetTypeVerification.Always)
@@ -6267,48 +6384,6 @@ return function(Vargs, env)
 							end
 						end
 					end)
-				end
-			end
-		};
-
-		LoadAvatar = {
-			Prefix = Settings.Prefix;
-			Commands = {"loadavatar", "loadchar", "loadcharacter"};
-			Args = {"player", "username", "avatar type(R6/R15)"};
-			Description = "Loads the target character in front of you. If you want to supply a UserId, supply with 'userid-<PlayerID>'";
-			AdminLevel = "Moderators";
-			Function = function(plr: Player, args: {string})
-				assert(args[1], "Missing player name")
-				assert(args[2], "Missing username or UserId")
-				assert(args[3], "Invalid argument #3 (avatar type expected)")
-
-				local AvatarType = string.upper(args[3])
-				if AvatarType == "R6" or AvatarType == "R15" then
-					local target = tonumber(string.match(args[2], "^userid%-(%d*)")) or assert(Functions.GetUserIdFromNameAsync(args[2]), "Unable to fetch user.")
-					if target then
-						local success, desc = pcall(service.Players.GetHumanoidDescriptionFromUserId, service.Players, target)
-
-						if success then
-							for _, v in service.GetPlayers(plr, args[1]) do
-								task.defer(function()
-									local char = Deps.Assets[`Rig{AvatarType}`]:Clone()
-									char.Name = Functions.GetNameFromUserIdAsync(target)
-									char.Parent = workspace
-									if char:FindFirstChild("Animate") then char.Animate:Destroy() local Anima = Deps.Assets[`AvatarType{Animate}`]:Clone() Anima.Parent = char Anima.Disabled = false end
-									char.Humanoid:ApplyDescription(desc, Enum.AssetTypeVerification.Always)
-									char.HumanoidRootPart.CFrame = (v.Character.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(90), 0) * CFrame.new(5, 0, 0)) * CFrame.Angles(0, math.rad(90), 0)
-
-									char.Humanoid.Died:Once(function()
-										service.Debris:AddItem(char, service.Players.RespawnTime)
-									end)
-								end)
-							end
-						else
-							error("Unable to get avatar for target user")
-						end
-					end
-				else
-					error("Invalid argument #3 (valid avatar type expected)")
 				end
 			end
 		};
@@ -6427,8 +6502,14 @@ return function(Vargs, env)
 			Description = "View script error log";
 			AdminLevel = "Moderators";
 			ListUpdater = function(plr: Player)
-				local tab = table.create(#Logs.Errors)
-				for i, v in Logs.Errors do
+				local Count = if Logs.Errors.__meta == "DLL" then Logs.Errors.count else #Logs.Errors
+				local tab = table.create(Count)
+				for i, v in 
+					if Logs.Errors.__meta == "DLL" then 
+						Logs.Errors:GetAsTable() 
+					else 
+						Logs.Errors 
+				do
 					table.insert(tab, i, {
 						Time = v.Time;
 						Text = `{v.Text}: {v.Desc}`;
@@ -6574,8 +6655,14 @@ return function(Vargs, env)
 			Description = "View the command logs for the server";
 			AdminLevel = "Moderators";
 			ListUpdater = function(plr: Player)
-				local tab = table.create(#Logs.Commands)
-				for i, v in Logs.Commands do
+				local Count = if Logs.Commands.__meta == "DLL" then Logs.Commands.count else #Logs.Commands
+				local tab = table.create(Count)
+				for i, v in 
+					if Logs.Commands.__meta == "DLL" then 
+						Logs.Commands:GetAsTable() 
+						else 
+						Logs.Commands 
+				do
 					table.insert(tab, i, {
 						Time = v.Time;
 						Text = `{v.Text}: {v.Desc}`;
@@ -6738,11 +6825,7 @@ return function(Vargs, env)
 					freecam.Parent = plrgui
 
 					if Settings.CommandFeedback then
-						Remote.MakeGui(v, "Notification", {
-							Title = "Notification";
-							Message = "Freecam has been enabled. Press Shift+P to toggle freecam on or off.";
-							Time = 15;
-						})
+						Functions.Notification("Notification", "Freecam has been enabled. Press Shift+P to toggle freecam on or off.", {v}, 15)
 					end
 				end
 			end
@@ -6767,11 +6850,7 @@ return function(Vargs, env)
 						service.Debris:AddItem(freecam, 2)
 
 						if Settings.CommandFeedback then
-							Remote.MakeGui(v, "Notification", {
-								Title = "Notification";
-								Message = "Freecam has been disabled.";
-								Time = 15;
-							})
+							Functions.Notification("Notification", "Freecam has been disabled.", {v}, 15)
 						end
 					end
 				end
