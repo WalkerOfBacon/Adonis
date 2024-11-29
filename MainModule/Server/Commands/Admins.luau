@@ -674,9 +674,8 @@ return function(Vargs, env)
 			Description = "Make a new team with the specified name and color";
 			AdminLevel = "Admins";
 			Function = function(plr: Player, args: {string})
-				local teamName = assert(args[1]:gsub(`"`, ""), "Missing team name (argument #1)")
+				local teamName = assert(args[1], "Missing team name (argument #1)")
 				local teamColor = Functions.ParseBrickColor(args[2])
-
 				service.New("Team", {
 					Parent = service.Teams;
 					Name = teamName;
@@ -1440,7 +1439,7 @@ return function(Vargs, env)
 				for _, v in service.Players:GetPlayers() do
 					Remote.RemoveGui(v, "Message")
 					Remote.MakeGui(v, "Message", {
-						Title = args[1]:gsub(`"`, "");
+						Title = args[1];
 						Message = args[2];
 						Time = (#tostring(args[1]) / 19) + 2.5;
 						--service.Filter(args[1],plr, v);
