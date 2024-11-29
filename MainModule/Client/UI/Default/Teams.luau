@@ -97,7 +97,7 @@ return function(data, env)
 			end
 		end;
 	})
-	
+
 	teamName:GetPropertyChangedSignal("Text"):Connect(function()
 		teamName.Text = string.gsub(teamName.Text, data.CmdSplitKey, "")
 	end)
