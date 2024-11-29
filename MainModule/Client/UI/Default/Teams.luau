@@ -101,7 +101,6 @@ return function(data, env)
 	teamName:GetPropertyChangedSignal("Text"):Connect(function()
 		teamName.Text = string.gsub(teamName.Text, data.CmdSplitKey, "")
 	end)
-
 	teamColor:GetPropertyChangedSignal("Text"):Connect(function()
 		teamColor.TextColor3 = BrickColor.new(teamColor.Text).Color
 		--teamColor.TextColor3 = `{BrickColor.new(teamColor.Text:sub(1, 1):upper()}{teamColor.Text:sub(2):lower()).Color}` -- unfortunately we have BrickColors with names like "New Yeller"
