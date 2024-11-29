@@ -85,7 +85,7 @@ return function(data, env)
 				self.Active = false
 				self.AutoButtonColor = false
 				self.Text = "..."
-				client.Remote.Send("ProcessCommand", string.format("%snewteam%s%s%s%s", data.CmdPrefix, data.CmdSplitKey, `"{teamName.Text}"`, data.CmdSplitKey, teamColor.Text));
+				client.Remote.Send("ProcessCommand", string.format("%snewteam%s%s%s%s", data.CmdPrefix, data.CmdSplitKey, teamName.Text, data.CmdSplitKey, teamColor.Text));
 				teamName.Text = ""
 				teamColor.Text = ""
 				wait(1.2)
@@ -98,10 +98,9 @@ return function(data, env)
 		end;
 	})
 	
-	--[[
 	teamName:GetPropertyChangedSignal("Text"):Connect(function()
 		teamName.Text = string.gsub(teamName.Text, data.CmdSplitKey, "")
-	end)]]
+	end)
 	
 	teamColor:GetPropertyChangedSignal("Text"):Connect(function()
 		teamColor.TextColor3 = BrickColor.new(teamColor.Text).Color
