@@ -57,7 +57,7 @@ return function(Vargs, GetEnv)
 		--// Events
 		--service.NetworkClient.ChildRemoved:Connect(function() wait(30) client.Anti.Detected("crash", "Network client disconnected") end)
 		--service.NetworkClient.ChildAdded:Connect(function() client.Anti.Detected("crash", "Network client reconnected?") end)
-		service.Player.Chatted:Connect(service.EventTask("Event: ProcessChat", Process.Chat))
+		service.TextChatService.SendingMessage:Connect(service.EventTask("Event: ProcessChat", Process.Chat))
 		service.Player.CharacterRemoving:Connect(service.EventTask("Event: CharacterRemoving", Process.CharacterRemoving))
 		service.Player.CharacterAdded:Connect(service.Threads.NewEventTask("Event: CharacterAdded", Process.CharacterAdded))
 		service.LogService.MessageOut:Connect(Process.LogService) --service.Threads.NewEventTask("EVENT:MessageOut",client.Process.LogService,60))
@@ -67,7 +67,11 @@ return function(Vargs, GetEnv)
 		Process.RateLimits = Remote.Get("RateLimits") or Process.RateLimits;
 
 		--// Hide TextChatComands
-		Process.HandleTextChatCommands()
+		task.defer(function()
+			if Remote.Get("Variable", "ChatCreateRobloxCommands") then
+				Process.HandleTextChatCommands()
+			end
+		end)
 
 		Process.RunAfterLoaded = nil;
 	end
@@ -169,7 +173,7 @@ return function(Vargs, GetEnv)
 			end
 
 			local textbox = service.UserInputService:GetFocusedTextBox()
-			if textbox then
+			if textbox and service.CheckProperty(textbox, "ReleaseFocus") then
 				textbox:ReleaseFocus()
 			end
 
@@ -179,7 +183,7 @@ return function(Vargs, GetEnv)
 		HandleTextChatCommands = function()
 			local data = Remote.Get("PlayerData")
 			local adminLevel, isDonor = data.AdminLevel, data.isDonor
-	
+
 			if service.TextChatService and service.TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
 				local function onCommandAdded(command)
 					if not command:IsA("TextChatCommand") then

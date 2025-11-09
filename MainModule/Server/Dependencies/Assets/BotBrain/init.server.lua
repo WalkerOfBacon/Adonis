@@ -1,18 +1,4 @@
-<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
-	<Meta name="ExplicitAutoJoints">true</Meta>
-	<External>null</External>
-	<External>nil</External>
-	<Item class="Script" referent="RBX32EFA7A0E4844F57B93C144597270446">
-		<Properties>
-			<BinaryString name="AttributesSerialize"></BinaryString>
-			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
-			<bool name="DefinesCapabilities">false</bool>
-			<bool name="Disabled">true</bool>
-			<Content name="LinkedSource"><null></null></Content>
-			<string name="Name">BotBrain</string>
-			<token name="RunContext">1</token>
-			<string name="ScriptGuid">{57C75EF3-A7BD-4721-AC2E-EF182347E0A6}</string>
-			<ProtectedString name="Source"><![CDATA[local char = script.Parent
+local char = script.Parent
 local event = script.Event
 
 local PathfindingService = game:GetService("PathfindingService")
@@ -76,9 +62,10 @@ end
 
 local function jumpCheck()
 	local cframe = getCFrame()
-	local targ = (props.Target and props.Target.Parent and (props.Target:FindFirstChild("HumanoidRootPart") or props.Target:FindFirstChild("Torso") or props.Target:FindFirstChild("UpperTorso")))
-	if targ and (targ.Position-cframe.Position).Magnitude < 1 then
-		--// Do something?
+	local targ = props.Target and props.Target.Parent and (props.Target:FindFirstChild("HumanoidRootPart") or props.Target:FindFirstChild("Torso") or props.Target:FindFirstChild("UpperTorso"))
+
+	if targ and (targ.Position - cframe.Position).Magnitude < 1 then
+		return --// Do something?
 	else
 		local checkVector = (cframe*CFrame.new(0,0,-3.5)).Position
 		local result = workspace:Raycast(cframe.Position, (checkVector - cframe.Position).Unit)
@@ -166,11 +153,12 @@ getPath = function()
 		if target then
 			targetPos = target.CFrame
 		else
-			targetPos = CFrame.new(props.PatrolZone+Vector3.new(math.random(-props.PatrolDist,props.PatrolDist),0,math.random(-props.PatrolDist,props.PatrolDist)))
-			task.wait(0.1)
+			targetPos = CFrame.new(props.PatrolZone + Vector3.new(math.random(-props.PatrolDist, props.PatrolDist),0,math.random(-props.PatrolDist, props.PatrolDist)))
+			task.wait(math.random())
 		end
 	else
-		targetPos = CFrame.new(props.PatrolZone+Vector3.new(math.random(-props.PatrolDist,props.PatrolDist),0,math.random(-props.PatrolDist,props.PatrolDist)))
+		targetPos = CFrame.new(props.PatrolZone+Vector3.new(math.random(-props.PatrolDist, props.PatrolDist),0,math.random(-props.PatrolDist, props.PatrolDist)))
+		task.wait(math.random())
 	end
 
 	if not props.isDead and not props.Computing then
@@ -218,7 +206,7 @@ local function walkPath()
 				hum:MoveTo(current+Vector3.new(2,0,2))
 			end
 
-			if #path>2 then
+			if #path > 2 then
 				repeat task.wait(0.1) until path[currentInd] ~= coord or (getCFrame().Position - coord).Magnitude < 2.5
 			end
 		end
@@ -242,15 +230,15 @@ local function updateBot()
 end
 
 local function init()
-	local str = Instance.new("StringValue",char)
+	local str = Instance.new("StringValue")
 	str.Name = "isBot"
 	str.Value = props.SpecialKey
+	str.Parent = char
 
 	hum.Died:Connect(function()
 		Debris:AddItem(char, 1)
 		props.isDead = true
 	end)
-
 
 	while task.wait(1/30) and not props.isDead do
 		if char and hum and not props.isDead then
@@ -284,19 +272,4 @@ event.Event:Connect(function(command,data)
 	elseif command == "Init" then
 		init()
 	end
-end)]]></ProtectedString>
-			<int64 name="SourceAssetId">-1</int64>
-			<BinaryString name="Tags"></BinaryString>
-		</Properties>
-		<Item class="BindableEvent" referent="RBXE8190E3CC2124BDB9256DCE153451865">
-			<Properties>
-				<BinaryString name="AttributesSerialize"></BinaryString>
-				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
-				<bool name="DefinesCapabilities">false</bool>
-				<string name="Name">Event</string>
-				<int64 name="SourceAssetId">-1</int64>
-				<BinaryString name="Tags"></BinaryString>
-			</Properties>
-		</Item>
-	</Item>
-</roblox>
+end)

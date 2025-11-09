@@ -1,7 +1,10 @@
 #!/bin/bash
 
-printf "Checking for lint errors from ./Loader and ./MainModule"
+echo "Updating Roblox standard library"
+selene generate-roblox-std
+
+echo "Checking for lint errors from ./Loader and ./MainModule"
 selene ./Loader ./MainModule
 
-printf "Running rojo build -o Adonis.rbxm"
-rojo build -o Adonis.rbxm
+echo "Running rojo build -o Adonis.rbxl"
+rojo build -o Adonis.rbxl

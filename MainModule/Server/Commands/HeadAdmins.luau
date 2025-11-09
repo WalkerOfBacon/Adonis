@@ -31,7 +31,7 @@ return function(Vargs, env)
 
 				for _, v in service.GetPlayers(plr, args[1], {
 					IsKicking = true;
-					NoFakePlayer = false;
+					UseFakePlayer = true;
 					})
 				do
 					if Admin.CheckAuthority(plr, v, "time-ban", false) then
@@ -102,7 +102,7 @@ return function(Vargs, env)
 				do
 					Functions.LogAdminAction(plr, "Un-Time Ban", v.Name, "Removed from timeban list")
 					Functions.Hint(
-						if Admin.RemoveTimeBan(v.Name)
+						if Admin.RemoveTimeBan(v)
 							then `{service.FormatPlayer(v, true)} has been un-time-banned`
 							else `{service.FormatPlayer(v, true)} is not currently time-banned`,
 						{plr}
@@ -124,7 +124,7 @@ return function(Vargs, env)
 
 				for _, v in service.GetPlayers(plr, assert(args[1], "Missing target user (argument #1)"), {
 					IsKicking = true;
-					NoFakePlayer = false;
+					UseFakePlayer = true;
 					})
 				do
 					if Admin.CheckAuthority(plr, v, "game-ban", false) then
@@ -153,7 +153,7 @@ return function(Vargs, env)
 				do
 					Functions.LogAdminAction(plr, "Unbanned", v.Name, "N/A")
 					Functions.Hint(
-						if Admin.RemoveBan(v.Name, true)
+						if Admin.RemoveBan(v, true)
 							then `{service.FormatPlayer(v, true)} has been unbanned from the game`
 							else `{service.FormatPlayer(v, true)} is not currently banned`,
 						{plr}
@@ -172,7 +172,7 @@ return function(Vargs, env)
 			Function = function(plr: Player, args: {string}, data: any)
 				local senderLevel = data.PlayerData.Level
 
-				for _, v in service.GetPlayers(plr, assert(args[1], "Missing target player (argument #1)")) do
+				for _, v in service.GetPlayers(plr, assert(args[1], "Missing target player (argument #1)"), {UseFakePlayer = true}) do
 					if senderLevel > Admin.GetLevel(v) then
 						Admin.AddAdmin(v, "Admins", true)
 						Functions.LogAdminAction(plr, "Temporary Admin", v.Name, "Temporary admin granted.")
@@ -397,6 +397,7 @@ return function(Vargs, env)
 			AdminLevel = "HeadAdmins";
 			Filter = true;
 			IsCrossServer = true;
+			CrossServerDenied = true;
 			Function = function(plr: Player, args: {string})
 				assert(args[1], "Reason (argument #1) must be supplied for this command!")
 

@@ -355,7 +355,7 @@ return function(Vargs, GetEnv)
 							return;
 						end
 
-						for i = 1,num do
+						for i = 1, math.min(num, #service.Players:GetPlayers()) do
 							Functions.PlayerFinders.random.Function(msg, plr, ...)
 						end
 					end
@@ -439,17 +439,8 @@ return function(Vargs, GetEnv)
 			return fakePlayer
 		end;
 
-		GetChatService = function(waitTime)
-			local isTextChat = service.TextChatService.ChatVersion == Enum.ChatVersion.TextChatService
-			local chatHandler = service.ServerScriptService:WaitForChild("ChatServiceRunner", waitTime or isTextChat and 0.2 or 145)
-			local chatMod = chatHandler and chatHandler:WaitForChild("ChatService", waitTime or isTextChat and 0.2 or 145)
-
-			if chatMod then
-				return require(chatMod)
-			elseif isTextChat then
-				return false
-			end
-			return nil
+		GetChatService = function()
+			return if service.TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then false else nil
 		end;
 
 		ArgsToString = function(args)
@@ -553,7 +544,7 @@ return function(Vargs, GetEnv)
 								options.IsKicking,
 								options.IsServer,
 								options.DontError,
-								not options.NoFakePlayer,
+								options.UseFakePlayer,
 								options.AllowUnknownUsers
 							)
 						end
@@ -591,7 +582,7 @@ return function(Vargs, GetEnv)
 							end
 
 							if plrCount == 0 then
-								if not options.NoFakePlayer then
+								if options.UseFakePlayer then
 									--// Attempt to retrieve non-ingame user
 									local UserId
 									if Functions.GetUserIdFromNameAsync(s) then
@@ -614,7 +605,7 @@ return function(Vargs, GetEnv)
 								if plrCount == 0 and not options.DontError then
 									Remote.MakeGui(plr, "Output", {
 										Title = "Missing player";
-										Message = if not options.NoFakePlayer then `No user named '{s}' exists`
+										Message = if options.UseFakePlayer then `No user named '{s}' exists`
 											else `No players matching '{s}' were found!`;
 									})
 								end
@@ -1003,11 +994,15 @@ return function(Vargs, GetEnv)
 		end;
 
 		SetLighting = function(prop, value)
-			if service.Lighting[prop] ~= nil then
-				service.Lighting[prop] = value
-				Variables.LightingSettings[prop] = value
-				for _, p in service.GetPlayers() do
-					Remote.SetLighting(p, prop, value)
+			if service.CheckProperty(service.Lighting, prop) then
+				local success = pcall(function()
+					service.Lighting[prop] = value
+				end)
+				if success then
+					Variables.LightingSettings[prop] = value
+					for _, p in service.GetPlayers() do
+						Remote.SetLighting(p, prop, value)
+					end
 				end
 			end
 		end;
@@ -1235,7 +1230,7 @@ return function(Vargs, GetEnv)
 					task.wait()
 				end
 
-				event:Fire("SetSetting", {
+				task.defer(event.Fire, event, "SetSetting", {
 					Creator = player;
 					Friendly = friendly;
 					TeamColor = player.TeamColor;
@@ -1249,7 +1244,7 @@ return function(Vargs, GetEnv)
 				})
 
 				if walk then
-					event:Fire("Init")
+					task.defer(task.defer, event.Fire, event, "Init")
 				end
 
 				table.insert(Variables.Objects, new)
@@ -1319,7 +1314,7 @@ return function(Vargs, GetEnv)
 				if #tab>=num then
 					break
 				elseif #tab>=num-1 then
-					table.insert(tab,string.sub(msg,#str+#tab+(if str.." " == key or #(str.." ")==5 then 0 elseif #(str.." ")<5 then num-2 else 2),#msg))
+					table.insert(tab,string.sub(msg,#str+1,#msg))
 					continue
 				end
 
@@ -1337,7 +1332,7 @@ return function(Vargs, GetEnv)
 					table.insert(tab,result)
 				end
 			end
-			
+
 			return tab
 		end;
 
@@ -1405,7 +1400,11 @@ return function(Vargs, GetEnv)
 			return AllGrabbedPlayers
 		end;
 
-		GetUserIdFromNameAsync = function(name)
+		GetUserIdFromNameAsync = function(name: string | Player)
+			if type(name) == "userdata" and name:IsA("Player") then
+				return name.UserId
+			end
+
 			local cache = Admin.UserIdCache[name]
 			if not cache then
 				local success, UserId = pcall(service.Players.GetUserIdFromNameAsync, service.Players, name)
@@ -1419,7 +1418,11 @@ return function(Vargs, GetEnv)
 			return cache
 		end;
 
-		GetNameFromUserIdAsync = function(id)
+		GetNameFromUserIdAsync = function(id: number | Player)
+			if type(id) == "userdata" and id:IsA("Player") then
+				return id.Name
+			end
+
 			local cache = Admin.UsernameCache[id]
 			if not cache then
 				local success, Username = pcall(service.Players.GetNameFromUserIdAsync, service.Players, id)
@@ -1634,7 +1637,9 @@ return function(Vargs, GetEnv)
 			end
 		end;
 
-		SHA256 = require(server.Shared.HashLib).SHA256;
+		SHA256 = function(...)
+			return require(server.Shared.HashLib).SHA256(...)
+		end;
 
 		ParseBrickColor = function(str: string, allowNil: boolean?)
 			if not str and allowNil then
@@ -1656,5 +1661,11 @@ return function(Vargs, GetEnv)
 			end
 			return if allowNil then nil else BrickColor.random()
 		end;
-	};
+
+		GetMainPrefix = function()
+			if type(Settings.Prefix) == "table" then return Settings.Prefix[1] else return Settings.Prefix end
+		end;
+	}
+
+
 end

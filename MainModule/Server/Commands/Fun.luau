@@ -154,7 +154,7 @@ return function(Vargs, env)
 				--// Apparently Rojo doesn't handle mesh parts very well, so I'm loading this remotely (using require to bypass insertservice restrictions)
 				--// The model is free to take so feel free to that 👍
 				--// Here's the URL https://www.roblox.com/library/7679952474/Adonis-Assets-Module
-				if not gerald then -- TODO: Add gerald to deps and remove require, I think the Rojo plugin (up to date) now supports loading 
+				if not gerald then -- TODO: Add gerald to deps and remove require, I think the Rojo plugin (up to date) now supports loading
 					warn("Requiring Assets Module by ID; Expand for module URL > ", {URL = "https://www.roblox.com/library/7679952474/Adonis-Assets-Module"})
 					gerald = require(7679952474).Gerald --// This apparently caches, so don't delete anything else future usage breaks
 				end
@@ -348,50 +348,20 @@ return function(Vargs, env)
 						model.Name = targetName
 
 						local hum = model:FindFirstChildOfClass("Humanoid") or model:WaitForChild("Humanoid")
-
 						if hum then
-							if hum.RigType == Enum.HumanoidRigType.R15 then
-								hum:WaitForChild("BodyHeightScale").Value /= 2
-								hum:WaitForChild("BodyDepthScale").Value /= 2
-								hum:WaitForChild("BodyWidthScale").Value /= 2
-
-								for _, obj in model:GetDescendants() do
-									if obj:IsA("BasePart") then
-										obj.Massless = true
-										obj.CanCollide = false
-									end
-								end
-							elseif hum.RigType == Enum.HumanoidRigType.R6 then
-								local motors = {}
-								table.insert(motors, model.HumanoidRootPart:FindFirstChild("RootJoint"))
-								for _, motor in model.Torso:GetChildren() do
-									if motor:IsA("Motor6D") then table.insert(motors, motor) end
-								end
-								for _, motor in motors do
-									motor.C0 = CFrame.new((motor.C0.Position * 0.4)) * (motor.C0 - motor.C0.Position)
-									motor.C1 = CFrame.new((motor.C1.Position * 0.4)) * (motor.C1 - motor.C1.Position)
-								end
-
-								for _, v in model:GetDescendants() do
-									if v:IsA("BasePart") then
-										v.Size *= 0.4
-										v.Position = model.Torso.Position
-									elseif v:IsA("Accessory") and v:FindFirstChild("Handle") then
-										local handle = v.Handle
-										handle.AccessoryWeld.C0 = CFrame.new((handle.AccessoryWeld.C0.Position * 0.4)) * (handle.AccessoryWeld.C0 - handle.AccessoryWeld.C0.Position)
-										handle.AccessoryWeld.C1 = CFrame.new((handle.AccessoryWeld.C1.Position * 0.4)) * (handle.AccessoryWeld.C1 - handle.AccessoryWeld.C1.Position)
-										local mesh = handle:FindFirstChildOfClass("SpecialMesh")
-										if mesh then
-											mesh.Scale *= 0.4
-										end
-									elseif v:IsA("SpecialMesh") and v.Parent.Name ~= "Handle" and v.Parent.Name ~= "Head" then
-										v.Scale *= 0.4
-									end
+							model:ScaleTo(0.5)
+							for _, obj in model:GetDescendants() do
+								if obj:IsA("BasePart") then
+									obj.Massless = true
+									obj.CanCollide = false
 								end
 							end
-						end
+							hum.PlatformStand = if steal then hum.PlatformStand else true
 
-						hum.PlatformStand = if steal then hum.PlatformStand else true
+							if hum.RigType == Enum.HumanoidRigType.R6 then
+								model.PrimaryPart = model.HumanoidRootPart -- Making this consistant with R15
+							end
+						end
 
 						model:PivotTo(cfr)
 						handle.CFrame = cfr
@@ -411,7 +381,7 @@ return function(Vargs, env)
 						service.New("WeldConstraint", {
 							Parent = tool;
 							Part0 = handle;
-							Part1 = model:FindFirstChild("Left Leg") or model:FindFirstChild("LeftFoot");
+							Part1 = model:FindFirstChild("HumanoidRootPart");
 						})
 
 						tool.Parent = plr:FindFirstChildWhichIsA("Backpack")
@@ -429,7 +399,9 @@ return function(Vargs, env)
 			AdminLevel = "Admins";
 			Function = function(plr: Player, args: {string})
 				local size = tonumber(args[2]) or 19
+				assert(size >= 10, "Pixel size too small (< 10)")
 				local dist = tonumber(args[3]) or 100
+				assert(dist <= 10_000, "Render distance too large (> 10,000)")
 				for i, v in service.GetPlayers(plr, args[1]) do
 					Remote.MakeGui(v, "Effect", {
 						Mode = "Pixelize";
@@ -626,7 +598,7 @@ return function(Vargs, env)
 						TorsoColor = BrickColor.new("Artichoke").Color,
 						Face = math.random(1, 3) == 3 and 173789114 or 133360789,
 					}
-					
+
 					local ActionProperties = {
 						Speed = args[2] or nil,
 						Health = args[3] or nil,
@@ -644,7 +616,7 @@ return function(Vargs, env)
 						end
 
 						task.defer(humanoid.ApplyDescription, humanoid, description, Enum.AssetTypeVerification.Always)
-						
+
 						if ActionProperties.Speed then humanoid.WalkSpeed = ActionProperties.Speed end
 						if ActionProperties.Jumppower then humanoid.JumpPower = ActionProperties.Jumppower end
 						if ActionProperties.Health then humanoid.MaxHealth = ActionProperties.Health; humanoid.Health = ActionProperties.Health end
@@ -1097,15 +1069,19 @@ return function(Vargs, env)
 		Sword = {
 			Prefix = Settings.Prefix;
 			Commands = {"sword", "givesword"};
-			Args = {"player", "allow teamkill (default: true)"};
+			Args = {"player", "allow teamkill (default: true)", "base dmg (default: 5)", "slash dmg (default: 10)", "lunge dmg (default: 30)"};
 			Description = "Gives the target player(s) a sword";
 			AdminLevel = "Moderators";
 			Fun = true;
 			Function = function(plr: Player, args: {string})
-				local sword = service.Insert(125013769)
+				local sword = server.Deps.Assets.LinkedSword
 				local config = sword:FindFirstChild("Configurations")
 				if config then
 					config.CanTeamkill.Value = if args[2] and args[2]:lower() == "false" then false else true
+					
+					config.BaseDamage.Value = if args[3] then assert(tonumber(args[3]), "Base Damage is not a number!") else 5
+					config.SlashDamage.Value = if args[4] then assert(tonumber(args[4]), "Slash Damage is not a number!") else 10
+					config.LungeDamage.Value = if args[5] then assert(tonumber(args[5]), "Lunge Damage is not a number!") else 30
 				end
 				for _, v in service.GetPlayers(plr, args[1]) do
 					local Backpack = v:FindFirstChildOfClass("Backpack")
@@ -1387,7 +1363,7 @@ return function(Vargs, env)
 				local img = tostring(args[2])
 				if not img then error(`{args[2]} is not a valid ID`) end
 				for i, v in service.GetPlayers(plr, args[1]) do
-					Remote.MakeGui(v, "Effect", {Mode = "ScreenVideo"; video = args[2];})
+					Remote.MakeGui(v, "Effect", {Mode = "ScreenVideo"; Video = args[2];})
 				end
 			end
 		};
@@ -2707,7 +2683,56 @@ return function(Vargs, env)
 								end
 							end
 						elseif human.RigType == Enum.HumanoidRigType.R15 then
-							Remote.MakeGui(plr, "Output", {Title = "Nonfunctional"; Message = `This command does not yet support R15.`; Color = Color3.new(1,1,1)})
+							if plr.Character:FindFirstChild("Shirt") then
+								plr.Character.Shirt.Parent = plr.Character.HumanoidRootPart
+							end
+							if plr.Character:FindFirstChild("Pants") then
+								plr.Character.Pants.Parent = plr.Character.HumanoidRootPart
+							end
+							local char, uppertorso, lowertorso, ca1, ca2 = plr.Character, plr.Character:FindFirstChild("UpperTorso"), plr.Character:FindFirstChild("LowerTorso"), CFrame.Angles(0, 0, 0), CFrame.Angles(0, 0, 0)
+							local head = char:FindFirstChild("Head")
+
+							uppertorso.Transparency = 1
+							lowertorso.Transparency = 1
+
+							for _, v in uppertorso:GetChildren() do
+								if v:IsA("Motor6D") then
+									local lc0 = service.New("CFrameValue", {Name = "LastC0";Value = v.C0;Parent = v})
+								end
+							end
+
+							for _, v in lowertorso:GetChildren() do
+								if v:IsA("Motor6D") then
+									local lc0 = service.New("CFrameValue", {Name = "LastC0";Value = v.C0;Parent = v})
+								end
+							end
+
+							head.Neck.C0 = CFrame.new(0, -.5, -2) * CFrame.Angles(0, 0, 0)
+
+							char.RightUpperArm["RightShoulder"].C0 = CFrame.new(.5, -1, -1.5) * ca1
+							char.LeftUpperArm["LeftShoulder"].C0 = CFrame.new(-.5, -1, -1.5) * ca2
+							char.RightUpperLeg["RightHip"].C0 = CFrame.new(1, -0.3, 1.5) * ca1
+							char.LeftUpperLeg["LeftHip"].C0 = CFrame.new(-1, -0.3, 1.5) * ca2
+							local st = service.New("Seat", {
+								Name = "Adonis_Torso",
+								TopSurface = 0,
+								BottomSurface = 0,
+								Size = Vector3.new(3, 1, 4),
+							})
+
+							local attachment = service.New("Attachment", {Parent = st})
+							local bf = service.New("VectorForce", {Force = Vector3.new(0, 2e3, 0), Parent = st, Attachment0 = attachment})
+
+							st.CFrame = uppertorso.CFrame
+							st.Parent = char
+
+							Functions.MakeWeld(uppertorso, st, CFrame.new(), CFrame.new(0, .5, 0))
+
+							for _, v in char:GetDescendants() do
+								if v:IsA("BasePart") then
+									v.BrickColor = BrickColor.new("Brown")
+								end
+							end
 						end
 					end
 				end
@@ -2803,7 +2828,8 @@ return function(Vargs, env)
 				local decal2 = decal1:Clone()
 				decal2.Face = "Front"
 				local sound = service.New("Sound")
-				sound.SoundId = "rbxassetid://138081566"
+				sound.SoundId = "rbxassetid://95156028272944" -- Alternative "rbxassetid://99986264226275" The old one that was used since audio purge: "rbxassetid://138081566"
+				sound.PlaybackSpeed = 0.22
 				sound.Looped = true
 				sound.Name = "ADONIS_ANIMATEAVATAR_SOUND"
 
@@ -2940,7 +2966,7 @@ return function(Vargs, env)
 				decal2.Name = "Nyan2"
 
 				local sound = service.New("Sound")
-				sound.SoundId = "rbxassetid://9067256917" -- Old audio 265125691 which is gone...
+				sound.SoundId = "rbxassetid://5008970630" -- Old audio 265125691 which is gone...
 				sound.Looped = true
 				sound.Name = "ADONIS_ANIMATEAVATAR_SOUND"
 
@@ -2983,6 +3009,11 @@ return function(Vargs, env)
 					avatarAnimator.Disabled = false
 
 					sound:Play()
+					task.delay(3.35*2, function() -- Simulate nyan cat song better
+						sound:Stop()
+						sound.SoundId = "rbxassetid://9067256917"
+						sound:Play()
+					end)
 				end
 			end
 		};
@@ -3326,29 +3357,29 @@ return function(Vargs, env)
 							torso.Anchored = true
 							torso.BottomSurface = 0
 							torso.TopSurface = 0
-	
+
 							for _, v in char:GetChildren() do
 								if v:IsA("BasePart") then
 									v.Anchored = true
 								end
 							end
-	
+
 							local function size(part)
 								for _, v in part:GetChildren() do
 									if (v:IsA("Weld") or v:IsA("Motor") or v:IsA("Motor6D")) and v.Part1 and v.Part1:IsA("Part") then
 										local p1 = v.Part1
 										local c0 = {v.C0:components()}
 										local c1 = {v.C1:components()}
-	
+
 										c0[3] = c0[3]*num
 										c1[3] = c1[3]*num
-	
+
 										p1.Anchored = true
 										v.Part1 = nil
-	
+
 										v.C0 = CFrame.new(unpack(c0))
 										v.C1 = CFrame.new(unpack(c1))
-	
+
 										if p1.Name ~= "Head" and p1.Name ~= "Torso" then
 											p1.Size = Vector3.new(p1.Size.X, p1.Size.Y, num)
 										elseif p1.Name ~= "Torso" then
@@ -3359,9 +3390,9 @@ return function(Vargs, env)
 													m.Part1.Anchored = true
 												end
 											end
-	
+
 											p1.Size = Vector3.new(p1.Size.X, p1.Size.Y, num)
-	
+
 											for _, m in p1:GetChildren() do
 												if m:IsA("Weld") then
 													m.Part0 = p1
@@ -3369,15 +3400,15 @@ return function(Vargs, env)
 												end
 											end
 										end
-	
+
 										if v.Parent == torso then
 											p1.BottomSurface = 0
 											p1.TopSurface = 0
 										end
-	
+
 										p1.Anchored = false
 										v.Part1 = p1
-	
+
 										if v.Part0 == torso then
 											table.insert(welds, v)
 											p1.Anchored = true
@@ -3389,24 +3420,24 @@ return function(Vargs, env)
 									size(v)
 								end
 							end
-	
+
 							size(char)
-	
+
 							torso.Size = Vector3.new(torso.Size.X, torso.Size.Y, num)
-	
+
 							for i, v in welds do
 								v.Part0 = torso
 								v.Part1.Anchored = false
 							end
-	
+
 							for i, v in char:GetChildren() do
 								if v:IsA("BasePart") then
 									v.Anchored = false
 								end
 							end
-	
+
 							Functions.MakeWeld(root, torso, CFrame.new(), CFrame.new())
-	
+
 							local cape = char:FindFirstChild("ADONIS_CAPE")
 							if cape then
 								cape.Size = cape.Size*num
@@ -3695,18 +3726,20 @@ return function(Vargs, env)
 					end
 
 					local resizeAttributeValue = char:GetAttribute("Adonis_Resize")
-					if not resizeAttributeValue then
-						char:SetAttribute("Adonis_Resize", num)
-					elseif resizeAttributeValue * num < Variables.SizeLimit then
-						char:SetAttribute("Adonis_Resize", resizeAttributeValue * num)
-					else
-						Functions.Hint(string.format("Cannot resize %s's character by %g%%: size limit exceeded.", service.FormatPlayer(v), num*100), {plr})
-						continue
+					local function setSizeAttribute(Val)
+						if not resizeAttributeValue or Val < Variables.SizeLimit then
+							char:SetAttribute("Adonis_Resize", Val)
+						else
+							error(string.format("Cannot resize %s's character by %g%%: size limit exceeded.", service.FormatPlayer(v), num*100))
+						end
 					end
 
 					if human and char:IsA("Model") then
+						setSizeAttribute(num)
 						char:ScaleTo(num)
 					elseif human and human.RigType == Enum.HumanoidRigType.R15 then
+						setSizeAttribute((resizeAttributeValue or 1) * num)
+						
 						for _, val in human:GetChildren() do
 							if val:IsA("NumberValue") and val.Name:match(".*Scale") then
 								val.Value *= num
@@ -3714,6 +3747,8 @@ return function(Vargs, env)
 						end
 						fixDensity(char)
 					elseif human and human.RigType == Enum.HumanoidRigType.R6 then
+						setSizeAttribute((resizeAttributeValue or 1) * num)
+						
 						local motors = {}
 						table.insert(motors, char.HumanoidRootPart:FindFirstChild("RootJoint"))
 						for _, motor in char.Torso:GetChildren() do
@@ -3768,7 +3803,7 @@ return function(Vargs, env)
 
 		UnSeizure = {
 			Prefix = Settings.Prefix;
-			Commands = {"unseizure"};
+			Commands = {"unseizure", "unseize"};
 			Args = {"player"};
 			Description = "Removes the effects of the seizure command";
 			Fun = true;
@@ -4733,7 +4768,7 @@ return function(Vargs, env)
 			AdminLevel = "Moderators";
 			Function = function(plr: Player, args: {string})
 				for i, v in service.GetPlayers(plr, args[1]) do
-					Admin.RunCommand(`{Settings.Prefix}char`, v.Name, "userid-51310503")
+					Admin.RunCommand(`{Settings.Prefix}char`, v.Name, "id-51310503")
 				end
 			end
 		};
@@ -5029,7 +5064,7 @@ return function(Vargs, env)
 					local humanoid = character:FindFirstChildOfClass("Humanoid")
 					local isR15 = humanoid and humanoid.RigType == Enum.HumanoidRigType.R15 or false
 					local relativeSize = head.Size / (isR15 and Vector3.new(1.2, 1.2, 1.2) or Vector3.new(2, 1, 1))
-					local partsColor = ({head.Color:ToHSV()})[3] < 0.26 and BrickColor.new("Lily White") or BrickColor.new("Black")
+					local partsColor = ({head.Color:ToHSV()})[3] < 0.26 and BrickColor.new("Lily white") or BrickColor.new("Black")
 
 					local sound = head:FindFirstChild("ADONIS_SOUND") or Instance.new("Sound")
 					sound.SoundId = `rbxassetid://{id}`

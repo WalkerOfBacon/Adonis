@@ -196,7 +196,7 @@ return function(Vargs, GetEnv)
 		SetView = function(ob)
 			local CurrentCamera = workspace.CurrentCamera
 
-			if ob == "reset" then
+			if ob == "reset" and service.Player.Character then
 				CurrentCamera.CameraType = Enum.CameraType.Custom
 				CurrentCamera.CameraSubject = service.Player.Character:FindFirstChildOfClass("Humanoid")
 				CurrentCamera.FieldOfView = 70
@@ -744,17 +744,15 @@ return function(Vargs, GetEnv)
 		end;
 
 		NewLocal = function(class, props, parent)
-			local obj = service.New(class)
-			for prop,value in props do
-				obj[prop] = value
-			end
-
-			if not parent or parent == "LocalContainer" then
-				obj.Parent = service.LocalContainer()
-			elseif parent == "Camera" then
-				obj.Parent = workspace.CurrentCamera
-			elseif parent == "PlayerGui" then
-				obj.Parent = service.PlayerGui
+			local success, obj = pcall(service.New, class, props)
+			if success then
+				if not parent or parent == "LocalContainer" then
+					obj.Parent = service.LocalContainer()
+				elseif parent == "Camera" then
+					obj.Parent = workspace.CurrentCamera
+				elseif parent == "PlayerGui" then
+					obj.Parent = service.PlayerGui
+				end
 			end
 		end;
 
@@ -860,7 +858,7 @@ return function(Vargs, GetEnv)
 				Parent = p;
 				Name = "Decal";
 				Face = 2;
-				Texture = `rbxassetid://{decalId}`;
+				Texture = `rbxthumb://type=Asset&id={decalId}&w=420&h=420`;
 				Transparency = 0;
 			}) else nil
 
@@ -877,8 +875,8 @@ return function(Vargs, GetEnv)
 			}
 			Variables.Capes[service.HttpService:GenerateGUID(false)] = capeData
 
-			local p = service.Players:GetPlayerFromCharacter(char)
-			if p and p == service.Player then
+			local plr = service.Players:GetPlayerFromCharacter(char)
+			if plr and plr == service.Player then
 				capeData.isPlayer = true
 			end
 
@@ -1028,9 +1026,13 @@ return function(Vargs, GetEnv)
 		end;
 
 		SetLighting = function(prop, value)
-			if service.Lighting[prop] ~= nil then
-				service.Lighting[prop] = value
-				Variables.LightingSettings[prop] = value
+			if service.CheckProperty(service.Lighting, prop) ~= nil then
+				local success = pcall(function()
+					service.Lighting[prop] = value
+				end)
+				if success then
+					Variables.LightingSettings[prop] = value
+				end
 			end
 		end;
 
@@ -1279,11 +1281,11 @@ return function(Vargs, GetEnv)
 
 			Variables.KeyBinds = keybinds or data and data.Keybinds or {}
 
-			service.UserInputService.InputBegan:Connect(function(input)
+			service.UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+				if gameProcessedEvent then return end
 				local key = tostring(input.KeyCode.Value)
-				local textbox = service.UserInputService:GetFocusedTextBox()
 
-				if Variables.KeybindsEnabled and not (textbox) and key and Variables.KeyBinds[key] and not Variables.WaitingForBind then
+				if Variables.KeybindsEnabled and key and Variables.KeyBinds[key] and not Variables.WaitingForBind then
 					local isAdmin = Remote.Get("CheckAdmin")
 					if time() - timer > 5 or isAdmin then
 						Remote.Send('ProcessCommand',Variables.KeyBinds[key],false,true)
@@ -1415,6 +1417,13 @@ return function(Vargs, GetEnv)
 			end
 		end;
 
+		Unfly = function()
+			local Humanoid: Humanoid = service.Player.Character and service.Player.Character:FindFirstChildOfClass("Humanoid")
+			if Humanoid then
+				Humanoid.PlatformStand = false
+			end
+		end;
+
 		SetCoreGuiEnabled = function(element,enabled)
 			service.StarterGui:SetCoreGuiEnabled(element,enabled)
 		end;
@@ -1429,7 +1438,7 @@ return function(Vargs, GetEnv)
 		end;
 
 		Cape = function(material,color,decal,reflect)
-			local torso = service.Player.Character:FindFirstChild("HumanoidRootPart")
+			local torso = service.Player.Character and service.Player.Character:FindFirstChild("HumanoidRootPart")
 			if torso then
 				local p = service.New("Part",service.LocalContainer())
 				p.Name = "::Adonis::Cape"
@@ -1449,7 +1458,7 @@ return function(Vargs, GetEnv)
 				if decal and decal~=0 then
 					local dec = service.New("Decal", p)
 					dec.Face = 2
-					dec.Texture = `http://www.roblox.com/asset/?id={decal}`
+					dec.Texture = `rbxthumb://type=Asset&id={decal}&w=420&h=420`
 					dec.Transparency=0
 				end
 				p.Size = Vector3.new(.2,.2,.2)
@@ -1911,7 +1920,9 @@ return function(Vargs, GetEnv)
 			end
 		end;
 
-		SHA256 = require(client.Shared.HashLib).SHA256;
+		SHA256 = function(...)
+			return require(client.Shared.HashLib).SHA256(...)
+		end;
 
 		GetFriendsOnline = function(maxFriends)
 			return service.Players.LocalPlayer:GetFriendsOnline(maxFriends)

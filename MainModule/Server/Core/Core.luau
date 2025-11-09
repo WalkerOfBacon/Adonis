@@ -18,7 +18,7 @@ return function(Vargs, GetEnv)
 	local server = Vargs.Server;
 	local service = Vargs.Service;
 
-	local Functions, Admin, Anti, Core, HTTP, Logs, Remote, Process, Variables, Settings, Deps;
+	local Functions, Admin, Anti, Core, HTTP, Logs, Remote, Process, Variables, Settings, Deps, t;
 	local AddLog, Queue, TrackTask
 	local logError = env.logError
 	local function Init(data)
@@ -33,6 +33,7 @@ return function(Vargs, GetEnv)
 		Variables = server.Variables;
 		Settings = server.Settings;
 		Deps = server.Deps;
+		t = server.Typechecker;
 
 		AddLog = Logs.AddLog;
 		Queue = service.Queue;
@@ -49,7 +50,7 @@ return function(Vargs, GetEnv)
 		Core.LoadstringObj = Core.GetLoadstring()
 		Core.Loadstring = require(Core.LoadstringObj)
 
-		service.DataStoreService = require(Deps.MockDataStoreService)(Settings.LocalDatastore)
+		service.DataStoreService = require(Deps.DataStoreService)(Settings.LocalDatastore)
 
 		local function disableAllGuis(folder: Folder)
 			for _, v in folder:GetChildren() do
@@ -149,6 +150,7 @@ return function(Vargs, GetEnv)
 			LocalDatastore = true;
 
 			CrossServerCommands = true;
+			RemoteExecutionConfirmed = true;
 
 			Creators = true;
 			Permissions = true;
@@ -175,11 +177,21 @@ return function(Vargs, GetEnv)
 			Ranks = true;
 			Commands = true;
 
+			CreatorPowers = true;
 			CodeExecution = true;
+			PlayerDataKeyBlacklist = true;
+
+			["Commands.MakeScript"] = true;
+			["Commands.ScriptBuilder"] = true;
+			["Commands.ScriptEditor"] = true;
+
+			["Variables.ScriptBuilder"] = true;
+			["Variables.ScriptEditor"] = true;
+			["Variables.DeveloperWhitelist"] = true;
+			["Variables.UrgentModuleId"] = true;
 
 			--// Not gonna let malicious stuff set DS_Blacklist to {} or anything!
 			DS_BLACKLIST = true;
-			["Variables.UrgentModuleId"] = true;
 		};
 
 		--// Prevent certain keys from loading from the DataStore
@@ -189,7 +201,7 @@ return function(Vargs, GetEnv)
 			LastLevelUpdate = true;
 			Groups = true;
 		};
-		
+
 		UpdatePlayerConnection = function(p)
 			for i, cli in next,service.NetworkServer:GetChildren() do
 				if cli:GetPlayer() == p then
@@ -227,7 +239,13 @@ return function(Vargs, GetEnv)
 						return ev.Changed:Connect(function()
 							if Core.RemoteEvent == rTable and not secureTriggered then
 								if ev == func then
-									func.OnServerInvoke = Process.Remote
+									func.OnServerInvoke = function(p, cliData, com, ...)
+										if t.interface({Mode = t.string})(cliData) then
+											cliData.Mode = "Get"
+											return Process.Remote(p, cliData, com, ...)
+										end
+										return nil
+									end;
 								end
 
 								if ev.Name ~= name then
@@ -251,14 +269,14 @@ return function(Vargs, GetEnv)
 					rTable.Events.FuncSec = secure(func, func.Name, event)
 
 					func.OnServerInvoke = function(p, cliData, com, ...)
-						if server.Typechecker.interface({Mode = server.Typechecker.string})(cliData) then
+						if t.interface({Mode = t.string})(cliData) then
 							cliData.Mode = "Get"
 							return Process.Remote(p, cliData, com, ...)
 						end
 						return nil
 					end;
 					rTable.Events.ProcessEvent = service.RbxEvent(event.OnServerEvent, function(p, cliData, com, ...)
-						if server.Typechecker.interface({Mode = server.Typechecker.string})(cliData) then
+						if t.interface({Mode = t.string})(cliData) then
 							cliData.Mode = "Fire"
 							Process.Remote(p, cliData, com, ...)
 						end
@@ -320,34 +338,34 @@ return function(Vargs, GetEnv)
 				end
 
 				loader.Object:Destroy()
-			end;
+			end
 
 			local depsName = service.HttpService:GenerateGUID(false)
 			local folder = server.Client:Clone()
-			local acli = Deps.ClientMover:Clone();
+			local acli = Deps.ClientMover:Clone()
 			local client = folder.Client
-			local parentObj = parent or service.StarterPlayer:FindFirstChildOfClass("StarterPlayerScripts");
+			local parentObj = parent or service.StarterPlayer:FindFirstChildOfClass("StarterPlayerScripts")
 			local clientLoader = {
 				Removing = false;
-			};
+			}
 
 			Core.MockClientKeys = Core.MockClientKeys or {
 				Special = depsName;
 				Module = client;
 			}
 
-			local depsName = Core.MockClientKeys.Special;
+			local depsName = Core.MockClientKeys.Special
 			local specialVal = service.New("StringValue")
 			specialVal.Value = `{Core.Name}\\{depsName}`
 			specialVal.Name = "Special"
 			specialVal.Parent = folder
 
-			acli.Parent = folder;
-			acli.Disabled = false;
+			acli.Parent = folder
+			acli.Disabled = false
 
-			folder.Archivable = false;
-			folder.Name = depsName; --"Adonis_Client"
-			folder.Parent = parentObj;
+			folder.Archivable = false
+			folder.Name = depsName --"Adonis_Client"
+			folder.Parent = parentObj
 
 			if not parent then
 				local oName = folder.Name
@@ -411,7 +429,7 @@ return function(Vargs, GetEnv)
 				folder.Parent = parentObj
 			end)
 
-			clientLoader.Removing = false;
+			clientLoader.Removing = false
 
 			AddLog("Script", "Created client")
 		end;
@@ -419,41 +437,44 @@ return function(Vargs, GetEnv)
 		HookClient = function(p)
 			local key = tostring(p.UserId)
 			local keys = Remote.Clients[key]
+
 			if keys then
 				local depsName = service.HttpService:GenerateGUID(false)
 				local eventName = service.HttpService:GenerateGUID(false)
-				local folder = server.Client:Clone()
-				local acli = Deps.ClientMover:Clone();
-				local client = folder.Client
+				local acli = Deps.ClientMover:Clone()
 				local parentTo = "PlayerGui" --// Roblox, seriously, please give the server access to PlayerScripts already so I don't need to do this.
-				local parentObj = p:FindFirstChildOfClass(parentTo) or p:WaitForChild(parentTo, 600);
+				local folder = service.New("Folder") --// ^^^^ NO, the sun is a deadly lazer. - Roblox CEO, CEO of CEOs
+				local parentObj = p:FindFirstChildOfClass(parentTo) or p:WaitForChild(parentTo, 600)
 
 				if not p.Parent then
 					return false
 				elseif not parentObj then
-					p:Kick("[CLI-102495] Loading Error - PlayerGui Missing (Waited 10 Minutes)")
+					p:Kick("[ACLI-0x102495]: Loading Error - PlayerGui Missing (Waited 10 Minutes)")
 					return false
 				end
 
-				local container = service.New("ScreenGui");
-				container.ResetOnSpawn = false;
-				container.Enabled = false;
-				container.Name = "\0";
+				local container = service.New("ScreenGui")
+				container.ResetOnSpawn = false
+				container.Enabled = false
+				container.Name = "\0"
+
+				server.Client:Clone().Parent = folder
+				server.Shared:Clone().Parent = folder
 
 				local specialVal = service.New("StringValue")
 				specialVal.Value = `{Core.Name}\\{depsName}`
 				specialVal.Name = "Special"
-				specialVal.Parent = folder
+				specialVal.Parent = folder.Client
 
 				keys.Special = depsName
 				keys.EventName = eventName
-				keys.Module = client
+				keys.Module = folder.Client
 
-				acli.Parent = folder;
-				acli.Disabled = false;
+				acli.Parent = folder
+				acli.Disabled = false
 
-				folder.Name = "Adonis_Client"
-				folder.Parent = container;
+				folder.Name = depsName--"Adonis_Client"
+				folder.Parent = container
 
 				--// Event only fires AFTER the client is alive and well
 				local event; event = service.Events.ClientLoaded:Connect(function(plr)
@@ -473,7 +494,7 @@ return function(Vargs, GetEnv)
 
 						leaveEvent:Disconnect()
 						leaveEvent = nil
-						event:Disconnect();
+						event:Disconnect()
 						event = nil
 					end
 				end)
@@ -483,14 +504,14 @@ return function(Vargs, GetEnv)
 				end)
 
 				if not ok then
-					p:Kick(`[CLI-192385] Loading Error [HookClient Error: {err}]`)
+					p:Kick(`[ACLI-0x192385]: Loading Error [HookClient Error: {err}]`)
 					return false
 				else
 					return true
 				end
 			else
 				if p and p.Parent then
-					p:Kick("[CLI-5691283] Loading Error [HookClient: Keys Missing]")
+					p:Kick("[ACLI-0x5691283]: Loading Error [HookClient: Keys Missing]")
 				end
 			end
 		end;
@@ -699,7 +720,7 @@ return function(Vargs, GetEnv)
 					for _, blacklistedData in ipairs({"Groups", "LastChat", "AdminRank", "AdminLevel", "LastLevelUpdate", "LastDataSave"}) do
 						data[blacklistedData] = nil
 					end
-					
+
 					--// We want to only save data if actual user data is different
 					local CompareOptions = {
 						IgnoreKeys = {"Groups", "AdminLevel", "AdminRank", "LastLevelUpdate", "LastDataSave"}
@@ -772,11 +793,20 @@ return function(Vargs, GetEnv)
 		end;
 
 		DataStoreEncode = function(key)
-			if Core.DS_RESET_SALTS[key] then
-				key = Core.DS_RESET_SALTS[key] .. key
-			end
+            if Core.DS_RESET_SALTS[key] then
+                key = Core.DS_RESET_SALTS[key] .. key
+            end
 
-			return Functions.Base64Encode(Remote.Encrypt(tostring(key), Settings.DataStoreKey))
+            -- Only consider salting if the key isn't a number (like a player ID) and if the setting isn't true
+            local IsPlayer = tonumber(key) ~= nil
+            local SettingIsTrue = server.Settings.DontSaltDataStoreKey == true
+            local ShouldSaltKey = not IsPlayer and not SettingIsTrue
+            local EncryptionKey = Settings.DataStoreKey
+            if ShouldSaltKey then
+                EncryptionKey = ("SALT_" .. Settings.DataStoreKey):sub(1,50)
+            end
+
+            return Functions.Base64Encode(Remote.Encrypt(tostring(key), EncryptionKey))
 		end;
 
 		SaveData = function(...)
@@ -822,7 +852,6 @@ return function(Vargs, GetEnv)
 					else
 						logError(`DataStore RemoveAsync Failed: {ret}`)
 					end
-					task.wait(6)
 				end, 120, true)
 
 				if not ran2 then
@@ -848,8 +877,6 @@ return function(Vargs, GetEnv)
 						else
 							logError(`DataStore SetAsync Failed: {ret}`);
 						end
-
-						task.wait(6)
 					end, 120, true)
 
 					if not ran2 then
@@ -883,8 +910,6 @@ return function(Vargs, GetEnv)
 						logError(`DataStore UpdateAsync Failed: {ret}`)
 						return error(ret)
 					end
-
-					task.wait(6)
 				end, 120, true) --// 120 timeout, yield until this queued function runs and completes
 
 				if not ran2 then
@@ -903,7 +928,7 @@ return function(Vargs, GetEnv)
 			end
 		end;
 
-		GetData = function(key: string, repeatCount: number?)
+		GetData = function(key: string, repeatCount: number?, showStatus: boolean?)
 			if repeatCount then
 				warn(`Retrying GetData request for {key}`)
 			end
@@ -931,11 +956,19 @@ return function(Vargs, GetEnv)
 					--// Attempt 3 times, with slight delay between if failed
 					task.wait(1)
 					if not repeatCount then
-						return Core.GetData(key, 3)
+						return Core.GetData(key, 3, showStatus)
 					elseif repeatCount > 0 then
-						return Core.GetData(key, repeatCount - 1)
+						return Core.GetData(key, repeatCount - 1, showStatus)
 					end
+					--
+					if showStatus then
+						return nil, false
+					end
+					return nil
 				else
+					if showStatus then
+						return err2, true
+					end
 					return err2
 				end
 			end
@@ -1002,16 +1035,21 @@ return function(Vargs, GetEnv)
 		end;
 
 		GetTableKey = function(indList: {string})
-			local tabs = Core.GetData("SavedTables") or {}
+			local tabs, SuccessSavedTables = Core.GetData("SavedTables", nil, true)
 			local realTable, tableName = Core.IndexPathToTable(indList)
 
 			local foundTable = nil
 
-			for _, v in tabs do
+			for _, v in tabs or {} do
 				if type(v) == "table" and v.TableName and v.TableName == tableName then
 					foundTable = v
 					break
 				end
+			end
+
+			if not tableName then
+				-- No table found, ditch data! Malicious maybe?
+				return false;
 			end
 
 			if not foundTable then
@@ -1021,10 +1059,13 @@ return function(Vargs, GetEnv)
 				}
 
 				table.insert(tabs, foundTable)
-				Core.SetData("SavedTables", tabs)
+				if SuccessSavedTables then
+					Core.SetData("SavedTables", tabs)
+				end
 			end
 
-			if not Core.GetData(foundTable.TableKey) then
+			local Data, Success = Core.GetData(foundTable.TableKey, nil, true)
+			if not Success then
 				Core.SetData(foundTable.TableKey, {})
 			end
 
@@ -1048,6 +1089,11 @@ return function(Vargs, GetEnv)
 				local tab = data.Table
 				local val = data.Value
 				local key = Core.GetTableKey(tab)
+
+				if not key then
+					-- No key found? Can't update !
+					return
+				end
 
 				--// Storing an old reference of data.Table as we may override it later on.
 				local originalTable = tab
@@ -1099,6 +1145,11 @@ return function(Vargs, GetEnv)
 				local originalTable = tab
 				local val = data.Value
 				local key = Core.GetTableKey(tab)
+
+				if not key then
+					-- No key found? Can't update !
+					return
+				end
 
 				if type(tab) == "string" then
 					tab = {"Settings", tab}
@@ -1235,15 +1286,17 @@ return function(Vargs, GetEnv)
 
 				if Core.DataStore and Settings.DataStoreEnabled then
 
+					local SuccessSettings, SuccessTables = false, false
+
 					local GetData, LoadData, SaveData, DoSave = Core.GetData, Core.LoadData, Core.SaveData, Core.DoSave
 					if not key then
-						SavedSettings = GetData("SavedSettings")
-						SavedTables = GetData("SavedTables")
+						SavedSettings, SuccessSettings = GetData("SavedSettings", nil, true)
+						SavedTables, SuccessTables = GetData("SavedTables", nil, true)
 					elseif key and not data then
 						if key == "SavedSettings" then
-							SavedSettings = GetData("SavedSettings")
+							SavedSettings, SuccessSettings = GetData("SavedSettings", nil, true)
 						elseif key == "SavedTables" then
-							SavedTables = GetData("SavedTables")
+							SavedTables, SuccessTables = GetData("SavedTables", nil, true)
 						end
 					elseif key and data then
 						if key == "SavedSettings" then
@@ -1254,12 +1307,12 @@ return function(Vargs, GetEnv)
 					end
 
 					if not key and not data then
-						if not SavedSettings then
+						if not SavedSettings and SuccessSettings then
 							SavedSettings = {}
 							SaveData("SavedSettings", {})
 						end
 
-						if not SavedTables then
+						if not SavedTables and SuccessTables then
 							SavedTables = {}
 							SaveData("SavedTables", {})
 						end
@@ -1289,9 +1342,11 @@ return function(Vargs, GetEnv)
 								local data = GetData(tData.TableKey)
 								if data then
 									--// TODO: Possibly find a better way to "batch" TableUpdates to prevent script exhaustion
+									local isStudio = service.RunService:IsStudio() -- Studio lag workaround for loading larger data such as BannedList
+									local isHugeTable = #data > 1000
 									for i = 1, #data do
 										LoadData("TableUpdate", data[i])
-										if i % 250 == 0 then
+										if (isStudio and isHugeTable and i % 25 == 0) or i % 250 == 0 then
 											task.wait()
 										end
 									end
@@ -1376,6 +1431,9 @@ return function(Vargs, GetEnv)
 				Service = service;
 			}
 
+			--// Support fake players properly for some exposed API functions
+			local PlayerType = t.union(t.instanceIsA("Player"), t.strictInterface({ UserId = t.integer, Name = t.optional(t.string) }))
+
 			local API = {
 				Access = MetaFunc(function(...)
 					local args = {...}
@@ -1428,12 +1486,15 @@ return function(Vargs, GetEnv)
 					else
 						error("Incorrect key or G_Access is disabled")
 					end
-				end, true);
+				end, true, { t.string, t.string });
 
 				Scripts = service.ReadOnly({
 					ExecutePermission = MetaFunc(function(srcScript, code)
-						local exists;
+						if not Settings.CodeExecution then
+							return
+						end
 
+						local exists;
 						for _, v in Core.ScriptCache do
 							if v.Script == srcScript then
 								exists = v
@@ -1464,44 +1525,54 @@ return function(Vargs, GetEnv)
 							end
 							return data.Source, module
 						end
-					end, true);
+					end, true, { t.instanceIsA("LuaSourceContainer"), t.string });
 				}, nil, nil, true);
 
-				CheckAdmin = MetaFunc(Admin.CheckAdmin, true);
+				CheckAdmin = MetaFunc(Admin.CheckAdmin, true, { PlayerType });
 
-				IsAdmin = MetaFunc(Admin.CheckAdmin, true);
+				IsAdmin = MetaFunc(Admin.CheckAdmin, true, { PlayerType });
 
-				IsBanned = MetaFunc(Admin.CheckBan, true);
+				IsBanned = MetaFunc(Admin.CheckBan, true, { PlayerType });
 
-				IsMuted = MetaFunc(Admin.IsMuted, true);
+				IsMuted = MetaFunc(Admin.IsMuted, true, { t.instanceOf("Player") });
 
-				CheckDonor = MetaFunc(Admin.CheckDonor, true);
+				CheckDonor = MetaFunc(Admin.CheckDonor, true, { t.instanceOf("Player") });
 
-				GetLevel = MetaFunc(Admin.GetLevel, true);
+				GetLevel = MetaFunc(Admin.GetLevel, true, { PlayerType });
 
-				SetLighting = MetaFunc(Functions.SetLighting, true);
+				SetLighting = MetaFunc(Functions.SetLighting, true, { t.string, t.optional(t.any) });
 
-				SetPlayerLighting = MetaFunc(Remote.SetLighting, true);
+				SetPlayerLighting = MetaFunc(Remote.SetLighting, true, { t.instanceOf("Player"), t.string, t.optional(t.any) });
 
-				NewParticle = MetaFunc(Functions.NewParticle, true);
+				NewParticle = MetaFunc(Functions.NewParticle, true, { t.instanceIsA("BasePart"), t.string, t.map(t.string, t.any )});
 
-				RemoveParticle = MetaFunc(Functions.RemoveParticle, true);
+				RemoveParticle = MetaFunc(Functions.RemoveParticle, true, { t.instanceIsA("BasePart"), t.string });
 
-				NewLocal = MetaFunc(Remote.NewLocal, true);
+				NewLocal = MetaFunc(Remote.NewLocal, true, { t.instanceOf("Player"), t.string, t.map(t.string, t.any), t.optional(t.string) });
 
-				MakeLocal = MetaFunc(Remote.MakeLocal, true);
+				MakeLocal = MetaFunc(Remote.MakeLocal, true, { t.instanceOf("Player"), t.Instance, t.optional(t.string), t.optional(t.boolean) });
 
-				MoveLocal = MetaFunc(Remote.MoveLocal, true);
+				MoveLocal = MetaFunc(Remote.MoveLocal, true, { t.instanceOf("Player"), t.string, t.optional(t.string), t.Instance });
 
-				RemoveLocal = MetaFunc(Remote.RemoveLocal, true);
+				RemoveLocal = MetaFunc(Remote.RemoveLocal, true, { t.instanceOf("Player"), t.string, t.optional(t.string), t.optional(t.boolean) });
 
-				Hint = MetaFunc(Functions.Hint, true);
+				Hint = MetaFunc(Functions.Hint, true, { t.string, t.array(t.instanceOf("Player")), t.optional(t.number), t.string, t.optional(t.string) });
 
-				Message = MetaFunc(Functions.Message, true);
+				Message = MetaFunc(function(title: string, message: string, players: {Player}, scroll: boolean?, duration: number?)
+					duration = duration or (#tostring(message) / 19) + 2.5
 
-				RunCommandAsNonAdmin = MetaFunc(Admin.RunCommandAsNonAdmin, true);
-
-				GetPlayers = MetaFunc(Functions.GetPlayers, true);
+					for _, v in ipairs(players) do
+						task.defer(function()
+							Remote.RemoveGui(v, "Message")
+							Remote.MakeGui(v, "Message", {
+								Title = title;
+								Message = message;
+								Scroll = scroll;
+								Time = duration;
+							})
+						end)
+					end
+				end, true, { t.string, t.string, t.array(t.instanceOf("Player")), t.optional(t.boolean), t.optional(t.number) });
 			}
 
 			if Core.DebugMode == true then
@@ -1525,8 +1596,8 @@ return function(Vargs, GetEnv)
 							end
 							return RealEnvResult, false
 						end
-					end	
-					
+					end
+
 					local AdonisDebugAPIBindable = service.New("BindableFunction")
 					AdonisDebugAPIBindable.Name = "Adonis_Debug_API"
 					AdonisDebugAPIBindable.Parent = service.ReplicatedStorage

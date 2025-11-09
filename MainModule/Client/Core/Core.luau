@@ -37,6 +37,7 @@ return function(Vargs, GetEnv)
 	local service = Vargs.Service
 	local client = Vargs.Client
 	local Anti, Core, Functions, Process, Remote, UI, Variables
+	local t
 	local function Init(data)
 		UI = client.UI;
 		Anti = client.Anti;
@@ -45,6 +46,8 @@ return function(Vargs, GetEnv)
 		Functions = client.Functions;
 		Process = client.Process;
 		Remote = client.Remote;
+
+		t = client.Typechecker;
 
 		Core.Name = "\0"
 		Core.Special = client.DepsName
@@ -218,6 +221,10 @@ return function(Vargs, GetEnv)
 
 			local API = {
 				Access = service.MetaFunc(function(...)
+					if not Variables.G_Access_Key then
+						return
+					end
+
 					local args = {...}
 					local key = args[1]
 					local ind = args[2]
@@ -231,7 +238,7 @@ return function(Vargs, GetEnv)
 						targ = client[ind]
 					end
 
-					assert(client.G_Access and (key == Variables.G_Access_Key or type(key) == "string" and Functions.SHA256(key..game.GameId) == Variables.G_Access_Key) and targ and client.Allowed_API_Calls[ind], "Incorrect key or G_Access is disabled")
+					assert(client.G_Access and (type(key) == "string" and Functions.SHA256(key..game.GameId) == Variables.G_Access_Key) and targ and client.Allowed_API_Calls[ind], "Incorrect key or G_Access is disabled")
 
 					if type(targ) == "table" then
 						return service.NewProxy {
@@ -254,10 +261,10 @@ return function(Vargs, GetEnv)
 							__metatable = true;
 						}
 					end
-				end);
+				end, true, { t.string, t.string });
 
 				Scripts = ReadOnly({
-					ExecutePermission = (function(srcScript, code)
+					ExecutePermission = MetaFunc(function(srcScript, code)
 						local exists;
 
 						for i,v in ScriptCache do
@@ -290,7 +297,7 @@ return function(Vargs, GetEnv)
 							end
 							return data.Source, module
 						end
-					end);
+					end, true, { t.instanceOf("LocalScript"), t.string });
 				}, nil, nil, true);
 			}
 
@@ -313,7 +320,7 @@ return function(Vargs, GetEnv)
 						end
 						return RealEnvResult, false
 					end
-				end	
+				end
 
 				local AdonisDebugAPIBindable = ReplicatedStorage:FindFirstChild("Adonis_Debug_API")
 				if AdonisDebugAPIBindable then
